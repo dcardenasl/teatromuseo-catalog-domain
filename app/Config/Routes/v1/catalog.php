@@ -33,5 +33,18 @@ $routes->group('catalog', ['namespace' => '\App\Controllers\Api\V1\Catalog'], fu
         $routes->group('', ['filter' => 'permission:cms.technique.delete'], function ($routes): void {
             $routes->delete('techniques/(:num)', 'TechniqueController::delete/$1');
         });
+        $routes->group('', ['filter' => 'permission:cms.collectionItem.read'], function ($routes): void {
+            $routes->get('collection-items', 'CollectionItemController::index');
+            $routes->get('collection-items/(:num)', 'CollectionItemController::show/$1');
+        });
+        $routes->group('', ['filter' => 'permission:cms.collectionItem.create'], function ($routes): void {
+            $routes->post('collection-items', 'CollectionItemController::create');
+        });
+        $routes->group('', ['filter' => 'permission:cms.collectionItem.update'], function ($routes): void {
+            $routes->put('collection-items/(:num)', 'CollectionItemController::update/$1');
+        });
+        $routes->group('', ['filter' => 'permission:cms.collectionItem.delete'], function ($routes): void {
+            $routes->delete('collection-items/(:num)', 'CollectionItemController::delete/$1');
+        });
     });
 });
