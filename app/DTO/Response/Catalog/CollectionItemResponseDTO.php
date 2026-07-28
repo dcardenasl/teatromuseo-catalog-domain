@@ -81,6 +81,16 @@ final readonly class CollectionItemResponseDTO implements DataTransferObjectInte
      */
     public static function fromArray(array $data): static
     {
+        $createdAt = $data['created_at'] ?? null;
+        if ($createdAt instanceof \DateTimeInterface) {
+            $createdAt = $createdAt->format('Y-m-d H:i:s');
+        }
+
+        $updatedAt = $data['updated_at'] ?? null;
+        if ($updatedAt instanceof \DateTimeInterface) {
+            $updatedAt = $updatedAt->format('Y-m-d H:i:s');
+        }
+
         return new static(
             id: (int) ($data['id'] ?? 0),
             name: (string) ($data['name'] ?? ''),
@@ -109,8 +119,8 @@ final readonly class CollectionItemResponseDTO implements DataTransferObjectInte
             links: $data['links'] ?? null,
             company_history: $data['company_history'] ?? null,
             is_active: (int) ($data['is_active'] ?? 0),
-            createdAt: $data['created_at'] ?? null,
-            updatedAt: $data['updated_at'] ?? null,
+            createdAt: is_string($createdAt) ? $createdAt : null,
+            updatedAt: is_string($updatedAt) ? $updatedAt : null,
         );
     }
 

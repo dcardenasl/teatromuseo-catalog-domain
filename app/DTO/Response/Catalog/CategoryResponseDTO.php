@@ -39,6 +39,16 @@ final readonly class CategoryResponseDTO implements DataTransferObjectInterface
      */
     public static function fromArray(array $data): static
     {
+        $createdAt = $data['created_at'] ?? null;
+        if ($createdAt instanceof \DateTimeInterface) {
+            $createdAt = $createdAt->format('Y-m-d H:i:s');
+        }
+
+        $updatedAt = $data['updated_at'] ?? null;
+        if ($updatedAt instanceof \DateTimeInterface) {
+            $updatedAt = $updatedAt->format('Y-m-d H:i:s');
+        }
+
         return new static(
             id: (int) ($data['id'] ?? 0),
             name: (string) ($data['name'] ?? ''),
@@ -46,8 +56,8 @@ final readonly class CategoryResponseDTO implements DataTransferObjectInterface
             icon: $data['icon'] ?? null,
             short_description: $data['short_description'] ?? null,
             sort_order: isset($data['sort_order']) ? (int) $data['sort_order'] : null,
-            createdAt: $data['created_at'] ?? null,
-            updatedAt: $data['updated_at'] ?? null,
+            createdAt: is_string($createdAt) ? $createdAt : null,
+            updatedAt: is_string($updatedAt) ? $updatedAt : null,
         );
     }
 

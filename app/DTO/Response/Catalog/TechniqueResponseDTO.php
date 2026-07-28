@@ -41,6 +41,16 @@ final readonly class TechniqueResponseDTO implements DataTransferObjectInterface
      */
     public static function fromArray(array $data): static
     {
+        $createdAt = $data['created_at'] ?? null;
+        if ($createdAt instanceof \DateTimeInterface) {
+            $createdAt = $createdAt->format('Y-m-d H:i:s');
+        }
+
+        $updatedAt = $data['updated_at'] ?? null;
+        if ($updatedAt instanceof \DateTimeInterface) {
+            $updatedAt = $updatedAt->format('Y-m-d H:i:s');
+        }
+
         return new static(
             id: (int) ($data['id'] ?? 0),
             name: (string) ($data['name'] ?? ''),
@@ -49,8 +59,8 @@ final readonly class TechniqueResponseDTO implements DataTransferObjectInterface
             video_url: $data['video_url'] ?? null,
             pdf_file_id: isset($data['pdf_file_id']) ? (int) $data['pdf_file_id'] : null,
             sort_order: isset($data['sort_order']) ? (int) $data['sort_order'] : null,
-            createdAt: $data['created_at'] ?? null,
-            updatedAt: $data['updated_at'] ?? null,
+            createdAt: is_string($createdAt) ? $createdAt : null,
+            updatedAt: is_string($updatedAt) ? $updatedAt : null,
         );
     }
 
