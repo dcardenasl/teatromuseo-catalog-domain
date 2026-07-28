@@ -24,7 +24,22 @@ class DomainPermissions
      * @var list<array{code: string, resource: string, action: string, description?: string}>
      */
     public const PERMISSIONS = [
-        // Populated by make:crud via ConfigWireman.
-        // Example: ['code' => 'faq.read', 'resource' => 'faqs', 'action' => 'read']
+        // Categories
+        ['code' => 'cms.category.read', 'resource' => 'categories', 'action' => 'read', 'description' => 'Read museum categories'],
+        ['code' => 'cms.category.create', 'resource' => 'categories', 'action' => 'create', 'description' => 'Create museum categories'],
+        ['code' => 'cms.category.update', 'resource' => 'categories', 'action' => 'update', 'description' => 'Update museum categories'],
+        ['code' => 'cms.category.delete', 'resource' => 'categories', 'action' => 'delete', 'description' => 'Delete museum categories'],
+
+        // Techniques
+        ['code' => 'cms.technique.read', 'resource' => 'techniques', 'action' => 'read', 'description' => 'Read museum techniques'],
+        ['code' => 'cms.technique.create', 'resource' => 'techniques', 'action' => 'create', 'description' => 'Create museum techniques'],
+        ['code' => 'cms.technique.update', 'resource' => 'techniques', 'action' => 'update', 'description' => 'Update museum techniques'],
+        ['code' => 'cms.technique.delete', 'resource' => 'techniques', 'action' => 'delete', 'description' => 'Delete museum techniques'],
+
+        // Collection Items
+        ['code' => 'cms.collectionItem.read', 'resource' => 'collection-items', 'action' => 'read', 'description' => 'Read museum collection items'],
+        ['code' => 'cms.collectionItem.create', 'resource' => 'collection-items', 'action' => 'create', 'description' => 'Create museum collection items'],
+        ['code' => 'cms.collectionItem.update', 'resource' => 'collection-items', 'action' => 'update', 'description' => 'Update museum collection items'],
+        ['code' => 'cms.collectionItem.delete', 'resource' => 'collection-items', 'action' => 'delete', 'description' => 'Delete museum collection items'],
     ];
 }

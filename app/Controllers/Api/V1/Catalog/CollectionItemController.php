@@ -71,7 +71,7 @@ class CollectionItemController extends ApiController
     {
         return $this->handleRequest(
             function (array $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('collectionItem.read')) {
+                if (!$context->hasPermission('cms.collectionItem.read')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->collectionItemService->show($id, $context);

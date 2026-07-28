@@ -71,7 +71,7 @@ class CategoryController extends ApiController
     {
         return $this->handleRequest(
             function (array $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('category.read')) {
+                if (!$context->hasPermission('cms.category.read')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->categoryService->show($id, $context);
