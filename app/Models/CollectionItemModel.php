@@ -26,7 +26,7 @@ class CollectionItemModel extends BaseAuditableModel
     protected array $searchableFields = ['name'];
 
     /** @var array<int, string> */
-    protected array $filterableFields = ['id'];
+    protected array $filterableFields = ['id', 'category_id', 'is_active'];
 
     /** @var array<int, string> */
     protected array $sortableFields = ['id', 'created_at', 'name'];

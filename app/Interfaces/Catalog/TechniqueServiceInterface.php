@@ -8,7 +8,10 @@ use dcardenasl\Ci4ApiCore\Services\CrudServiceContract;
 
 interface TechniqueServiceInterface extends CrudServiceContract
 {
-    // Declare resource-specific service methods here.
-    // Implement them in TechniqueService; until ready, throw:
-    //   throw new \BadMethodCallException(__METHOD__ . ' not implemented');
+    /**
+     * Get a public technique by ID or slug.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPublic(string $idOrSlug): array;
 }

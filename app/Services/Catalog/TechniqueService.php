@@ -32,7 +32,13 @@ class TechniqueService extends BaseCrudService implements TechniqueServiceInterf
      * to add specific business logic while keeping the service layer clean.
      */
 
-    // Custom methods declared in TechniqueServiceInterface must be implemented here.
-    // Until fully implemented, throw to avoid silent incorrect behavior:
-    //   throw new \BadMethodCallException(__METHOD__ . ' not implemented');
+    public function getPublic(string $idOrSlug): array
+    {
+        $model = model(\App\Models\TechniqueModel::class);
+        $entity = is_numeric($idOrSlug) ? $model->find((int) $idOrSlug) : $model->where('slug', $idOrSlug)->first();
+        if (!$entity) {
+            throw new \dcardenasl\Ci4ApiCore\Exceptions\NotFoundException(lang('Techniques.not_found'));
+        }
+        return $this->responseMapper->map($entity)->toArray();
+    }
 }

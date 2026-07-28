@@ -8,7 +8,10 @@ use dcardenasl\Ci4ApiCore\Services\CrudServiceContract;
 
 interface CollectionItemServiceInterface extends CrudServiceContract
 {
-    // Declare resource-specific service methods here.
-    // Implement them in CollectionItemService; until ready, throw:
-    //   throw new \BadMethodCallException(__METHOD__ . ' not implemented');
+    /**
+     * Get a public active collection item by ID or inventory code, including its techniques.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPublicActive(string $idOrCode): array;
 }

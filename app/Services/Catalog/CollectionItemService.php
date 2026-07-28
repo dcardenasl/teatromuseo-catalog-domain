@@ -32,7 +32,27 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
      * to add specific business logic while keeping the service layer clean.
      */
 
-    // Custom methods declared in CollectionItemServiceInterface must be implemented here.
-    // Until fully implemented, throw to avoid silent incorrect behavior:
-    //   throw new \BadMethodCallException(__METHOD__ . ' not implemented');
+    public function getPublicActive(string $idOrCode): array
+    {
+        $model = model(\App\Models\CollectionItemModel::class);
+        $entity = is_numeric($idOrCode)
+            ? $model->where('is_active', 1)->find((int) $idOrCode)
+            : $model->where('is_active', 1)->where('inventory_code', $idOrCode)->first();
+        if (!$entity) {
+            throw new \dcardenasl\Ci4ApiCore\Exceptions\NotFoundException(lang('CollectionItems.not_found'));
+        }
+
+        $data = $this->responseMapper->map($entity)->toArray();
+
+        // Fetch associated techniques
+        $db = \Config\Database::connect();
+        $query = $db->table('collection_item_technique')
+            ->select('techniques.*')
+            ->join('techniques', 'techniques.id = collection_item_technique.technique_id')
+            ->where('collection_item_technique.collection_item_id', $entity->id)
+            ->get();
+
+        $data['techniques'] = $query !== false ? $query->getResultArray() : [];
+        return $data;
+    }
 }
