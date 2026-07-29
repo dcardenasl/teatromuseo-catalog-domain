@@ -85,6 +85,8 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
             ->select('techniques.*')
             ->join('techniques', 'techniques.id = collection_item_technique.technique_id')
             ->where('collection_item_technique.collection_item_id', $entity->id)
+            ->orderBy('techniques.sort_order', 'ASC')
+            ->orderBy('techniques.name', 'ASC')
             ->get();
 
         $data['techniques'] = $query !== false ? $query->getResultArray() : [];
