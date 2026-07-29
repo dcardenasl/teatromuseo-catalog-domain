@@ -66,6 +66,7 @@ trait HasLocalizedTranslations
     protected function beforeUpdate(int $id, array $data, ?SecurityContext $context): array
     {
         $data = parent::beforeUpdate($id, $data, $context);
+        $data['id'] = $id;
         $this->localizedTranslationsProvided = array_key_exists('translations', $data);
         $this->pendingLocalizedTranslations = $this->localizedTranslationsProvided && is_array($data['translations'])
             ? array_values($data['translations'])

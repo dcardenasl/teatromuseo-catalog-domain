@@ -32,8 +32,9 @@ class CategoryModel extends BaseAuditableModel
     protected array $sortableFields = ['id', 'created_at', 'name'];
 
     protected $validationRules = [
+        'id' => 'permit_empty|integer',
         'name' => 'required|string|max_length[255]',
-        'slug' => 'required|string|max_length[255]|is_unique[categories.slug]',
+        'slug' => 'required|string|max_length[255]|is_unique[categories.slug,id,{id}]',
         'icon' => 'permit_empty|string|max_length[255]',
         'short_description' => 'permit_empty|string',
         'sort_order' => 'permit_empty|integer',

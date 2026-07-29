@@ -32,8 +32,9 @@ class TechniqueModel extends BaseAuditableModel
     protected array $sortableFields = ['id', 'created_at', 'name'];
 
     protected $validationRules = [
+        'id' => 'permit_empty|integer',
         'name' => 'required|string|max_length[255]',
-        'slug' => 'required|string|max_length[255]|is_unique[techniques.slug]',
+        'slug' => 'required|string|max_length[255]|is_unique[techniques.slug,id,{id}]',
         'summary' => 'permit_empty|string',
         'video_url' => 'permit_empty|string|max_length[255]',
         'pdf_file_id' => 'permit_empty|integer',

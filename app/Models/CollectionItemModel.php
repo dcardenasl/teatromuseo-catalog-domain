@@ -32,9 +32,10 @@ class CollectionItemModel extends BaseAuditableModel
     protected array $sortableFields = ['id', 'created_at', 'name'];
 
     protected $validationRules = [
+        'id' => 'permit_empty|integer',
         'name' => 'required|string|max_length[255]',
         'category_id' => 'required|integer',
-        'inventory_code' => 'permit_empty|string|max_length[255]|is_unique[collection_items.inventory_code]',
+        'inventory_code' => 'permit_empty|string|max_length[255]|is_unique[collection_items.inventory_code,id,{id}]',
         'status' => 'required|string|max_length[255]',
         'summary' => 'permit_empty|string',
         'curiosidad' => 'permit_empty|string',
