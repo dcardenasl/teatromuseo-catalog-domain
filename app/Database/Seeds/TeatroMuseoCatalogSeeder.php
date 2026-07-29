@@ -4,61 +4,99 @@ declare(strict_types=1);
 
 namespace App\Database\Seeds;
 
+use App\Libraries\Localization\LocalizedTranslationStore;
+use App\Libraries\Localization\PublicSlugStore;
+use App\Libraries\Localization\RequestLocaleResolver;
+use App\Libraries\Localization\SlugGenerator;
+use App\Models\CatalogPublicSlugModel;
+use App\Models\CatalogTranslationModel;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Database\Seeder;
 
 /**
- * Seeds representative museum catalog data for local development.
+ * Seeds representative museum catalog data (techniques, categories, collection items)
+ * aligned across all 4 system languages (es, en, fr, pt).
  */
 final class TeatroMuseoCatalogSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach ($this->categoryDefinitions() as $definition) {
-            $this->upsertRecord('categories', [
-                'slug' => $definition['slug'],
+        $translationStore = new LocalizedTranslationStore(new CatalogTranslationModel());
+
+        // 1. Techniques
+        foreach ($this->techniqueDefinitions() as $def) {
+            $this->upsertRecord('techniques', [
+                'slug' => $def['slug'],
             ], [
-                'name' => $definition['name'],
-                'icon' => $definition['icon'],
-                'short_description' => $definition['short_description'],
-                'sort_order' => $definition['sort_order'],
+                'name' => $def['translations']['es']['name'],
+                'summary' => $def['translations']['es']['summary'],
             ]);
+
+            $techniqueId = (int) $this->db->table('techniques')->where('slug', $def['slug'])->get()->getRow()->id;
+            $translationRows = [];
+            foreach ($def['translations'] as $locale => $fields) {
+                $translationRows[] = ['locale' => $locale, ...$fields];
+            }
+            $translationStore->sync('technique', $techniqueId, $translationRows);
         }
 
+        // 2. Categories
+        foreach ($this->categoryDefinitions() as $def) {
+            $this->upsertRecord('categories', [
+                'slug' => $def['slug'],
+            ], [
+                'name' => $def['translations']['es']['name'],
+                'icon' => $def['icon'],
+                'short_description' => $def['translations']['es']['short_description'],
+                'sort_order' => $def['sort_order'],
+            ]);
+
+            $categoryId = (int) $this->db->table('categories')->where('slug', $def['slug'])->get()->getRow()->id;
+            $translationRows = [];
+            foreach ($def['translations'] as $locale => $fields) {
+                $translationRows[] = ['locale' => $locale, ...$fields];
+            }
+            $translationStore->sync('category', $categoryId, $translationRows);
+        }
+
+        // 3. Collection Items
         $categoryIds = $this->categoryIds();
-        foreach ($this->itemDefinitions() as $definition) {
-            $categoryId = $categoryIds[$definition['category_slug']] ?? null;
+        $techniqueIds = $this->techniqueIds();
+
+        foreach ($this->itemDefinitions() as $def) {
+            $categoryId = $categoryIds[$def['category_slug']] ?? null;
             if ($categoryId === null) {
                 continue;
             }
 
+            $es = $def['translations']['es'];
             $this->upsertRecord('collection_items', [
-                'inventory_code' => $definition['inventory_code'],
+                'inventory_code' => $def['inventory_code'],
             ], [
-                'name' => $definition['name'],
+                'name' => $es['name'],
                 'category_id' => $categoryId,
                 'status' => 'published',
-                'summary' => $definition['summary'],
-                'curiosidad' => $definition['curiosidad'],
-                'contenido' => $definition['contenido'],
-                'origin' => $definition['origin'],
-                'period' => $definition['period'],
-                'creator' => $definition['creator'],
-                'ubicacion' => $definition['ubicacion'],
-                'materials' => $definition['materials'],
+                'summary' => $es['summary'],
+                'curiosidad' => $es['curiosidad'],
+                'contenido' => $es['contenido'],
+                'origin' => $def['origin'],
+                'period' => $def['period'],
+                'creator' => $def['creator'],
+                'ubicacion' => $es['ubicacion'],
+                'materials' => $def['materials'],
                 'cover_file_id' => null,
                 'gallery_file_ids' => null,
-                'show_in_totem' => $definition['show_in_totem'],
-                'internal_notes' => $definition['internal_notes'],
-                'collection_number' => $definition['collection_number'],
-                'collection_group' => $definition['collection_group'],
-                'physical_description' => $definition['physical_description'],
-                'dimensions' => $definition['dimensions'],
-                'ingress_type' => $definition['ingress_type'],
-                'donated_by' => $definition['donated_by'],
-                'tags' => $definition['tags'],
-                'links' => $definition['links'],
-                'company_history' => $definition['company_history'],
+                'show_in_totem' => $def['show_in_totem'],
+                'internal_notes' => $def['internal_notes'],
+                'collection_number' => $def['collection_number'],
+                'collection_group' => $def['collection_group'],
+                'physical_description' => $es['physical_description'],
+                'dimensions' => $def['dimensions'],
+                'ingress_type' => $def['ingress_type'],
+                'donated_by' => $def['donated_by'],
+                'tags' => $def['tags'],
+                'links' => $def['links'],
+                'company_history' => null,
                 'is_active' => 1,
             ]);
         }
@@ -88,36 +126,111 @@ final class TeatroMuseoCatalogSeeder extends Seeder
                 continue;
             }
 
-            $slugStore->syncForResource('collection_item', $itemId, [$legacyLocale => $name]);
+            $namesByLocale = [];
+            $trans = $this->db->table('catalog_translations')
+                ->where('translatable_type', 'collection_item')
+                ->where('translatable_id', $itemId)
+                ->where('field', 'name')
+                ->get()
+                ->getResultArray();
+
+            foreach ($trans as $tRow) {
+                $loc = (string) ($tRow['locale'] ?? '');
+                $val = trim((string) ($tRow['value'] ?? ''));
+                if ($loc !== '' && $val !== '') {
+                    $namesByLocale[$loc] = $val;
+                }
+            }
+
+            if ($namesByLocale !== []) {
+                $slugStore->syncForResource('collection_item', $itemId, $namesByLocale);
+            }
         }
     }
 
     /**
-     * @return list<array{slug: string, name: string, icon: ?string, short_description: string, sort_order: int}>
+     * @return list<array{slug: string, translations: array<string, array{name: string, summary: string}>}>
+     */
+    private function techniqueDefinitions(): array
+    {
+        return [
+            [
+                'slug' => 'titeres-guiol',
+                'translations' => [
+                    'es' => ['name' => 'Títeres de Guiñol', 'summary' => 'Títeres de guante articulados desde la base del muñeco.'],
+                    'en' => ['name' => 'Guignol Puppets', 'summary' => 'Glove puppets operated directly by the performer from beneath.'],
+                    'fr' => ['name' => 'Marionnettes à gaine', 'summary' => 'Marionnettes manipulées directement par le bas avec la main.'],
+                    'pt' => ['name' => 'Fantoches de Luva', 'summary' => 'Manipulação direta com a mão a partir da base do boneco.'],
+                ],
+            ],
+            [
+                'slug' => 'marionetas-hilos',
+                'translations' => [
+                    'es' => ['name' => 'Marionetas de Hilos', 'summary' => 'Muñecos suspendidos y movidos por finos hilos desde una cruceta.'],
+                    'en' => ['name' => 'String Marionettes', 'summary' => 'Figures suspended and controlled from above by strings and a control cross.'],
+                    'fr' => ['name' => 'Marionnettes à fils', 'summary' => 'Figures suspendues manipulées depuis le haut au moyen de fils.'],
+                    'pt' => ['name' => 'Marionetes de Fios', 'summary' => 'Figuras suspensas e movimentadas por fios a partir de uma cruzeta.'],
+                ],
+            ],
+            [
+                'slug' => 'titeres-sombra',
+                'translations' => [
+                    'es' => ['name' => 'Teatro de Sombras', 'summary' => 'Figuras recortadas proyectadas sobre una pantalla retroiluminada.'],
+                    'en' => ['name' => 'Shadow Theatre', 'summary' => 'Flat cut-out figures projected onto a translucent backlit screen.'],
+                    'fr' => ['name' => 'Théâtre d\'ombres', 'summary' => 'Figures découpées projetées sur un écran rétroéclairé.'],
+                    'pt' => ['name' => 'Teatro de Sombras', 'summary' => 'Figuras cortadas projetadas sobre uma tela retroiluminada.'],
+                ],
+            ],
+            [
+                'slug' => 'caracterizacion-mascaras',
+                'translations' => [
+                    'es' => ['name' => 'Máscaras y Caracterización', 'summary' => 'Piezas faciales expresivas para interpretación dramática.'],
+                    'en' => ['name' => 'Masks & Characterization', 'summary' => 'Expressive facial pieces for physical and dramatic performance.'],
+                    'fr' => ['name' => 'Masques et Caractérisation', 'summary' => 'Pièces faciales expressives pour le jeu dramatique et physique.'],
+                    'pt' => ['name' => 'Máscaras e Caracterização', 'summary' => 'Peças faciais expressivas para interpretação dramática.'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{slug: string, icon: string, sort_order: int, translations: array<string, array{name: string, short_description: string}>}>
      */
     private function categoryDefinitions(): array
     {
         return [
             [
                 'slug' => 'escenografia',
-                'name' => 'Escenografía',
                 'icon' => 'layout-grid',
-                'short_description' => 'Elementos escénicos, utilería y estructuras de escena.',
                 'sort_order' => 10,
+                'translations' => [
+                    'es' => ['name' => 'Escenografía', 'short_description' => 'Elementos escénicos, utilería y estructuras de escena.'],
+                    'en' => ['name' => 'Scenography', 'short_description' => 'Stage elements, props, and scene structures.'],
+                    'fr' => ['name' => 'Scénographie', 'short_description' => 'Éléments scéniques, accessoires et structures de scène.'],
+                    'pt' => ['name' => 'Cenografia', 'short_description' => 'Elementos cênicos, adereços e estruturas de cena.'],
+                ],
             ],
             [
                 'slug' => 'vestuario',
-                'name' => 'Vestuario',
                 'icon' => 'shirt',
-                'short_description' => 'Prendas, accesorios y piezas de caracterización.',
                 'sort_order' => 20,
+                'translations' => [
+                    'es' => ['name' => 'Vestuario', 'short_description' => 'Prendas, accesorios y piezas de caracterización.'],
+                    'en' => ['name' => 'Costumes', 'short_description' => 'Garments, accessories, and characterization pieces.'],
+                    'fr' => ['name' => 'Costumes', 'short_description' => 'Vêtements, accessoires et pièces de caractérisation.'],
+                    'pt' => ['name' => 'Figurinos', 'short_description' => 'Peças de vestuário, acessórios e caracterização.'],
+                ],
             ],
             [
                 'slug' => 'memoria',
-                'name' => 'Memoria',
                 'icon' => 'archive',
-                'short_description' => 'Documentos, registros y material de archivo.',
                 'sort_order' => 30,
+                'translations' => [
+                    'es' => ['name' => 'Memoria', 'short_description' => 'Documentos, registros y material de archivo.'],
+                    'en' => ['name' => 'Archive & Memory', 'short_description' => 'Documents, historical records, and archival material.'],
+                    'fr' => ['name' => 'Mémoire et Archives', 'short_description' => 'Documents, registres et matériel d\'archives.'],
+                    'pt' => ['name' => 'Memória e Arquivo', 'short_description' => 'Documentos, registros e material de arquivo.'],
+                ],
             ],
         ];
     }
@@ -128,68 +241,131 @@ final class TeatroMuseoCatalogSeeder extends Seeder
     private function itemDefinitions(): array
     {
         return [
-            $this->item('pieza-001', 'Telón Azul', 'escenografia', 'Telón principal de la sala experimental.', 'Se pintó a mano con pigmentos lavables.', 'Archivo de producción', '2024-2025', 'Equipo técnico', 'Sala Experimental', 'Lona, pintura textil y bastidor', 'TEL-001', 'Escenografía del estreno inaugural.', '3,20 x 6,00 m', 'Montaje interno', 'Compañía TeatroMuseo', 'teatro, telon', 'https://example.test/pieza-001'),
-            $this->item('pieza-002', 'Tramoya Móvil', 'escenografia', 'Sistema móvil de cambios rápidos de escena.', 'Se reutiliza desde varias temporadas.', 'Taller central', '2023-2024', 'Equipo de escenografía', 'Bodega técnica', 'Madera, rieles y herrajes', 'TEL-002', 'Parte del soporte escénico principal.', '2,40 x 1,20 m', 'Traslado institucional', null, 'tramoya, escena', 'https://example.test/pieza-002'),
-            $this->item('pieza-003', 'Lienzo de Fondo', 'escenografia', 'Fondo pintado para atmósferas nocturnas.', 'El degradado se resolvió en una sola jornada.', 'Archivo de temporada', '2022-2023', 'Área de arte', 'Depósito 1', 'Lino y acrílico', 'TEL-003', 'Usado en funciones de verano.', '4,00 x 7,50 m', 'Producción propia', null, 'fondo, pintura', 'https://example.test/pieza-003'),
-            $this->item('pieza-004', 'Atril de Dirección', 'escenografia', 'Atril plegable para lecturas y ensayos.', 'Su ángulo se ajusta con una sola mano.', 'Taller de utilería', '2025', 'Jefatura técnica', 'Sala de ensayo', 'Metal pintado y madera', 'TEL-004', 'Accesorio de apoyo para ensayo.', '1,10 x 0,45 m', 'Compra directa', null, 'utileria, ensayo', 'https://example.test/pieza-004'),
-            $this->item('pieza-005', 'Bastidor Rojo', 'escenografia', 'Bastidor ligero para escenas de tránsito.', 'Se montó como pieza modular.', 'Archivo escénico', '2021-2022', 'Equipo técnico', 'Depósito 2', 'Aluminio y tela tensada', 'TEL-005', 'Sistema modular reutilizable.', '2,80 x 1,80 m', 'Donación interna', null, 'bastidor, modular', 'https://example.test/pieza-005'),
-            $this->item('pieza-006', 'Traje de Gala', 'vestuario', 'Prenda de ceremonia usada en funciones especiales.', 'Conserva el bordado original de la primera temporada.', 'Sastrería teatral', '2024', 'Diseño de vestuario', 'Camerino histórico', 'Seda, hilo metálico y forro de algodón', 'VES-001', 'Vestuario de apertura de temporada.', 'Talla M', 'Confección propia', 'Colectivo TeatroMuseo', 'vestuario, gala', 'https://example.test/pieza-006'),
-            $this->item('pieza-007', 'Vestuario de Ensayo', 'vestuario', 'Conjunto liviano para trabajo de sala.', 'Fue ajustado para múltiples intérpretes.', 'Taller de vestuario', '2023', 'Departamento de vestuario', 'Camerino 2', 'Algodón y elastano', 'VES-002', 'Pieza de uso continuo.', 'Talla L', 'Confección propia', null, 'ensayo, vestuario', 'https://example.test/pieza-007'),
-            $this->item('pieza-008', 'Máscara de Lino', 'vestuario', 'Máscara de rostro para montaje físico.', 'Su textura cambia con la luz frontal.', 'Archivo de caracterización', '2022', 'Diseño escénico', 'Bodega de vestuario', 'Lino, resina y pintura acrílica', 'VES-003', 'Uso en escenas de máscara.', 'Única', 'Donación de montaje', null, 'mascara, rostro', 'https://example.test/pieza-008'),
-            $this->item('pieza-009', 'Sombrero de Camerino', 'vestuario', 'Sombrero utilizado en escenas de época.', 'Se conserva con su caja original.', 'Colección de vestuario', '2021', 'Maestría de vestuario', 'Archivo central', 'Fieltro y cinta de raso', 'VES-004', 'Complemento de utilería vestible.', 'Talla única', 'Adquisición institucional', null, 'sombrero, epoca', 'https://example.test/pieza-009'),
-            $this->item('pieza-010', 'Programa de Temporada', 'memoria', 'Programa impreso de una temporada histórica.', 'Incluye anotaciones manuscritas de circulación interna.', 'Archivo documental', '2019', 'Equipo editorial', 'Archivo histórico', 'Papel couché y tinta offset', 'MEM-001', 'Registro impreso de programación.', '24 páginas', 'Donación privada', null, 'programa, archivo', 'https://example.test/pieza-010'),
-            $this->item('pieza-011', 'Afiche de Estreno', 'memoria', 'Afiche promocional del estreno de verano.', 'La tirada original fue de solo cien ejemplares.', 'Archivo de prensa', '2020', 'Diseño gráfico', 'Archivo de prensa', 'Papel, tinta serigráfica', 'MEM-002', 'Material promocional de exhibición.', '70 x 100 cm', 'Colección patrimonial', null, 'afiche, estreno', 'https://example.test/pieza-011'),
-            $this->item('pieza-012', 'Cuaderno de Montaje', 'memoria', 'Bitácora técnica con notas de puesta en escena.', 'Contiene bocetos y marcas de ensayo.', 'Archivo técnico', '2024', 'Jefatura de montaje', 'Archivo técnico', 'Papel, lápiz y cinta', 'MEM-003', 'Registro operativo del proceso.', 'Cuaderno A5', 'Archivo propio', null, 'bitacora, montaje', 'https://example.test/pieza-012'),
-            $this->item('pieza-013', 'Archivo Fotográfico', 'memoria', 'Conjunto de imágenes de funciones y ensayos.', 'La serie cubre tres temporadas consecutivas.', 'Archivo visual', '2018-2025', 'Fotografía institucional', 'Archivo fotográfico', 'Papel fotográfico y negativos digitalizados', 'MEM-004', 'Memoria visual del teatro.', 'Colección mixta', 'Archivo institucional', null, 'foto, memoria', 'https://example.test/pieza-013'),
+            $this->item(
+                'pieza-001',
+                'escenografia',
+                'marionetas-hilos',
+                'TEL-001',
+                '3,20 x 6,00 m',
+                'Montaje interno',
+                'Compañía TeatroMuseo',
+                'teatro, telon',
+                'https://example.test/pieza-001',
+                '2024-2025',
+                'Equipo técnico',
+                'Archivo de producción',
+                'Lona, pintura textil y bastidor',
+                [
+                    'es' => ['name' => 'Telón Azul', 'summary' => 'Telón principal de la sala experimental.', 'curiosidad' => 'Se pintó a mano con pigmentos lavables.', 'contenido' => '<p>Telón principal de la sala experimental.</p><p>Se pintó a mano con pigmentos lavables.</p>', 'physical_description' => 'Escenografía del estreno inaugural.', 'ubicacion' => 'Sala Experimental'],
+                    'en' => ['name' => 'Blue Backdrop', 'summary' => 'Main backdrop of the experimental hall.', 'curiosidad' => 'Hand-painted with washable pigments.', 'contenido' => '<p>Main backdrop of the experimental hall.</p><p>Hand-painted with washable pigments.</p>', 'physical_description' => 'Inaugural premiere scenography.', 'ubicacion' => 'Experimental Hall'],
+                    'fr' => ['name' => 'Rideau Bleu', 'summary' => 'Rideau principal de la salle expérimentale.', 'curiosidad' => 'Peint à la main avec des pigments lavables.', 'contenido' => '<p>Rideau principal de la salle expérimentale.</p><p>Peint à la main avec des pigments lavables.</p>', 'physical_description' => 'Scénographie de la première inauguration.', 'ubicacion' => 'Salle Expérimentale'],
+                    'pt' => ['name' => 'Cortina Azul', 'summary' => 'Cortina principal da sala experimental.', 'curiosidad' => 'Pintada à mão com pigmentos laváveis.', 'contenido' => '<p>Cortina principal da sala experimental.</p><p>Pintada à mão com pigmentos laváveis.</p>', 'physical_description' => 'Cenografia da estreia inaugural.', 'ubicacion' => 'Sala Experimental'],
+                ]
+            ),
+            $this->item(
+                'pieza-006',
+                'vestuario',
+                'caracterizacion-mascaras',
+                'VES-001',
+                'Talla M',
+                'Confección propia',
+                'Colectivo TeatroMuseo',
+                'vestuario, gala',
+                'https://example.test/pieza-006',
+                '2024',
+                'Diseño de vestuario',
+                'Sastrería teatral',
+                'Seda, hilo metálico y forro de algodón',
+                [
+                    'es' => ['name' => 'Traje de Gala', 'summary' => 'Prenda de ceremonia usada en funciones especiales.', 'curiosidad' => 'Conserva el bordado original de la primera temporada.', 'contenido' => '<p>Prenda de ceremonia usada en funciones especiales.</p>', 'physical_description' => 'Vestuario de apertura de temporada.', 'ubicacion' => 'Camerino histórico'],
+                    'en' => ['name' => 'Gala Outfit', 'summary' => 'Ceremonial costume used in special performances.', 'curiosidad' => 'Retains the original first-season embroidery.', 'contenido' => '<p>Ceremonial costume used in special performances.</p>', 'physical_description' => 'Season opening costume.', 'ubicacion' => 'Historical Dressing Room'],
+                    'fr' => ['name' => 'Costume de Gala', 'summary' => 'Vêtement de cérémonie utilisé lors des représentations spéciales.', 'curiosidad' => 'Conserve la broderie originale de la première saison.', 'contenido' => '<p>Vêtement de cérémonie utilisé lors des représentations spéciales.</p>', 'physical_description' => 'Costume d\'ouverture de saison.', 'ubicacion' => 'Loge historique'],
+                    'pt' => ['name' => 'Traje de Gala', 'summary' => 'Veste cerimonial usada em apresentações especiais.', 'curiosidad' => 'Conserva o bordado original da primeira temporada.', 'contenido' => '<p>Veste cerimonial usada em apresentações especiais.</p>', 'physical_description' => 'Figurino de abertura de temporada.', 'ubicacion' => 'Camarim histórico'],
+                ]
+            ),
+            $this->item(
+                'pieza-008',
+                'vestuario',
+                'caracterizacion-mascaras',
+                'VES-003',
+                'Única',
+                'Donación de montaje',
+                null,
+                'mascara, rostro',
+                'https://example.test/pieza-008',
+                '2022',
+                'Diseño escénico',
+                'Archivo de caracterización',
+                'Lino, resina y pintura acrílica',
+                [
+                    'es' => ['name' => 'Máscara de Lino', 'summary' => 'Máscara de rostro para montaje físico.', 'curiosidad' => 'Su textura cambia con la luz frontal.', 'contenido' => '<p>Máscara de rostro para montaje físico.</p>', 'physical_description' => 'Uso en escenas de máscara.', 'ubicacion' => 'Bodega de vestuario'],
+                    'en' => ['name' => 'Linen Mask', 'summary' => 'Face mask designed for physical theatre.', 'curiosidad' => 'Its texture reacts to front lighting.', 'contenido' => '<p>Face mask designed for physical theatre.</p>', 'physical_description' => 'Used in mask scenes.', 'ubicacion' => 'Costume Storage'],
+                    'fr' => ['name' => 'Masque de Lin', 'summary' => 'Masque facial conçu pour le théâtre physique.', 'curiosidad' => 'Sa texture réagit à la lumière frontale.', 'contenido' => '<p>Masque facial conçu pour le théâtre physique.</p>', 'physical_description' => 'Utilisé dans les scènes de masque.', 'ubicacion' => 'Réserve des costumes'],
+                    'pt' => ['name' => 'Máscara de Linho', 'summary' => 'Máscara facial projetada para teatro físico.', 'curiosidad' => 'Sua textura reage à iluminação frontal.', 'contenido' => '<p>Máscara facial projetada para teatro físico.</p>', 'physical_description' => 'Usada em cenas de máscara.', 'ubicacion' => 'Depósito de figurinos'],
+                ]
+            ),
+            $this->item(
+                'pieza-010',
+                'memoria',
+                'titeres-sombra',
+                'MEM-001',
+                '24 páginas',
+                'Donación privada',
+                null,
+                'programa, archivo',
+                'https://example.test/pieza-010',
+                '2019',
+                'Equipo editorial',
+                'Archivo documental',
+                'Papel couché y tinta offset',
+                [
+                    'es' => ['name' => 'Programa de Temporada', 'summary' => 'Programa impreso de una temporada histórica.', 'curiosidad' => 'Incluye anotaciones manuscritas de circulación interna.', 'contenido' => '<p>Programa impreso de una temporada histórica.</p>', 'physical_description' => 'Registro impreso de programación.', 'ubicacion' => 'Archivo histórico'],
+                    'en' => ['name' => 'Season Program', 'summary' => 'Printed souvenir program of a landmark season.', 'curiosidad' => 'Includes handwritten internal circulation notes.', 'contenido' => '<p>Printed souvenir program of a landmark season.</p>', 'physical_description' => 'Printed programming record.', 'ubicacion' => 'Historical Archive'],
+                    'fr' => ['name' => 'Programme de Saison', 'summary' => 'Programme imprimé d\'une saison historique.', 'curiosidad' => 'Comprend des notes manuscrites de circulation interne.', 'contenido' => '<p>Programme imprimé d\'une saison historique.</p>', 'physical_description' => 'Registre imprimé de programmation.', 'ubicacion' => 'Archives historiques'],
+                    'pt' => ['name' => 'Programa de Temporada', 'summary' => 'Programa impresso de uma temporada histórica.', 'curiosidad' => 'Inclui anotações manuscritas de circulação interna.', 'contenido' => '<p>Programa impresso de uma temporada histórica.</p>', 'physical_description' => 'Registro impresso de programação.', 'ubicacion' => 'Arquivo histórico'],
+                ]
+            ),
         ];
     }
 
     /**
+     * @param array<string, array<string, string>> $translations
      * @return array<string, mixed>
      */
     private function item(
         string $inventoryCode,
-        string $name,
         string $categorySlug,
-        string $summary,
-        string $curiosidad,
-        string $origin,
-        string $period,
-        string $creator,
-        string $ubicacion,
-        string $materials,
+        ?string $techniqueSlug,
         string $collectionNumber,
-        string $physicalDescription,
         string $dimensions,
         string $ingressType,
         ?string $donatedBy,
         string $tags,
-        string $links
+        string $links,
+        string $period,
+        string $creator,
+        string $origin,
+        string $materials,
+        array $translations
     ): array {
         return [
             'inventory_code' => $inventoryCode,
-            'name' => $name,
             'category_slug' => $categorySlug,
-            'summary' => $summary,
-            'curiosidad' => $curiosidad,
-            'contenido' => '<p>' . $summary . '</p><p>' . $curiosidad . '</p>',
-            'origin' => $origin,
-            'period' => $period,
-            'creator' => $creator,
-            'ubicacion' => $ubicacion,
-            'materials' => $materials,
-            'show_in_totem' => 1,
-            'internal_notes' => null,
+            'technique_slug' => $techniqueSlug,
             'collection_number' => $collectionNumber,
             'collection_group' => 'TeatroMuseo',
-            'physical_description' => $physicalDescription,
             'dimensions' => $dimensions,
             'ingress_type' => $ingressType,
             'donated_by' => $donatedBy,
             'tags' => $tags,
             'links' => $links,
-            'company_history' => null,
-            'is_active' => 1,
+            'period' => $period,
+            'creator' => $creator,
+            'origin' => $origin,
+            'materials' => $materials,
+            'show_in_totem' => 1,
+            'internal_notes' => null,
+            'translations' => $translations,
         ];
     }
 
@@ -198,16 +374,24 @@ final class TeatroMuseoCatalogSeeder extends Seeder
      */
     private function categoryIds(): array
     {
-        $rows = $this->db->table('categories')
-            ->whereIn('slug', array_map(static fn (array $definition): string => $definition['slug'], $this->categoryDefinitions()))
-            ->get()
-            ->getResultArray();
-
+        $rows = $this->db->table('categories')->get()->getResultArray();
         $ids = [];
         foreach ($rows as $row) {
             $ids[(string) $row['slug']] = (int) $row['id'];
         }
+        return $ids;
+    }
 
+    /**
+     * @return array<string, int>
+     */
+    private function techniqueIds(): array
+    {
+        $rows = $this->db->table('techniques')->get()->getResultArray();
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[(string) $row['slug']] = (int) $row['id'];
+        }
         return $ids;
     }
 
@@ -221,11 +405,7 @@ final class TeatroMuseoCatalogSeeder extends Seeder
         $supportsUpdatedAt = $this->db->fieldExists('updated_at', $table);
         $supportsId = $this->db->fieldExists('id', $table);
 
-        $existing = $this->db->table($table)
-            ->where($lookup)
-            ->get()
-            ->getRowArray();
-
+        $existing = $this->db->table($table)->where($lookup)->get()->getRowArray();
         $payload = array_merge($lookup, $data);
         if ($supportsUpdatedAt) {
             $payload['updated_at'] = date('Y-m-d H:i:s');
@@ -240,19 +420,12 @@ final class TeatroMuseoCatalogSeeder extends Seeder
                 $this->db->table($table)->insert($payload);
                 return;
             } catch (DatabaseException) {
-                $fallback = $this->db->table($table)
-                    ->where($lookup)
-                    ->get()
-                    ->getRowArray();
-
+                $fallback = $this->db->table($table)->where($lookup)->get()->getRowArray();
                 if ($fallback !== null && $supportsId && isset($fallback['id'])) {
-                    $this->db->table($table)
-                        ->where('id', (int) $fallback['id'])
-                        ->update($payload);
+                    $this->db->table($table)->where('id', (int) $fallback['id'])->update($payload);
                     return;
                 }
             }
-
             return;
         }
 
@@ -260,14 +433,10 @@ final class TeatroMuseoCatalogSeeder extends Seeder
         unset($updatePayload['created_at']);
 
         if ($supportsId && isset($existing['id'])) {
-            $this->db->table($table)
-                ->where('id', (int) $existing['id'])
-                ->update($updatePayload);
+            $this->db->table($table)->where('id', (int) $existing['id'])->update($updatePayload);
             return;
         }
 
-        $this->db->table($table)
-            ->where($lookup)
-            ->update($updatePayload);
+        $this->db->table($table)->where($lookup)->update($updatePayload);
     }
 }
