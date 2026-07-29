@@ -19,6 +19,28 @@
 
 ## ✅ Completadas
 
+### CAT-DOM-001 — Multi-idioma (port del event-domain) + slugs públicos por locale (2026-07-28)
+- **Qué**: port 1:1 del stack de localización del event-domain — `catalog_translations` (EAV
+  locale-agnóstico), `LocalizedTranslationStore`, `TranslationFieldCatalog`
+  (`collection_item`: name/summary/contenido/curiosidad/physical_description/ubicacion;
+  `category`: name/short_description; `technique`: name/summary), trait
+  `HasLocalizedTranslations`, `RequestLocaleResolver`, `SlugGenerator` y `PublicSlugStore` +
+  trait `HasPublicSlugs` (compartido con el event-domain; extraerlos a ci4-api-core queda en
+  backlog). `catalog_public_slugs` con UNIQUE `(type, locale, slug)`. `CollectionItemService`
+  genera slugs estables por locale desde `name` (manual override vía key `slug` en
+  `translations`); `getPublicActive()` ahora resuelve id → inventory_code (compat) → slug por
+  locale. DTOs de respuesta exponen `translations`/`localized` (+`slug`/`slugs` en items) y los
+  Request DTOs aceptan `translations` — todo aditivo, campos legacy intactos. Backfill de
+  traducciones y slugs para datos existentes; seeder sincroniza slugs idempotente. OpenAPI de
+  los endpoints públicos agregado (no existía).
+- **Por qué**: el sitio web generaba slugs cliente-side desde el nombre que el backend no podía
+  resolver (404 para items sin inventory_code) y el catálogo no tenía contenido multi-idioma,
+  a diferencia del event-domain. Ahora ambos dominios comparten el mismo contrato de idiomas
+  dinámicos del CMS (locale codes BCP-47, sin dependencia domain→domain).
+- **Verificado**: `composer quality` ✅ completo (PHPStan L8, CS-Fixer, swagger, arch-drift,
+  i18n-check, 205 tests / 512 assertions); migrate → rollback → re-migrate limpio; backfill y
+  seeder generan slugs reales en la BD dev.
+
 ### DOM-110 — Automatización de Sync de Permisos en Desarrollo (DX)
 - Modificar `app/Commands/SyncPermissions.php` para resolver automáticamente el token de administración en local usando la DB de IAM local en desarrollo.
 - Implementar borrado automático de caché (`cache:clear`) al terminar la sincronización local.

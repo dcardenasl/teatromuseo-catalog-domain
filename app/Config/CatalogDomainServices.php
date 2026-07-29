@@ -6,6 +6,37 @@ namespace Config;
 
 trait CatalogDomainServices
 {
+    public static function localizedTranslationStore(bool $getShared = true): \App\Libraries\Localization\LocalizedTranslationStore
+    {
+        if ($getShared) {
+            return static::getSharedInstance('localizedTranslationStore');
+        }
+
+        $request = \Config\Services::request();
+
+        return new \App\Libraries\Localization\LocalizedTranslationStore(
+            new \App\Models\CatalogTranslationModel(),
+            $request instanceof \CodeIgniter\HTTP\IncomingRequest ? $request : null
+        );
+    }
+
+    public static function publicSlugStore(bool $getShared = true): \App\Libraries\Localization\PublicSlugStore
+    {
+        if ($getShared) {
+            return static::getSharedInstance('publicSlugStore');
+        }
+
+        $request = \Config\Services::request();
+
+        return new \App\Libraries\Localization\PublicSlugStore(
+            new \App\Models\CatalogPublicSlugModel(),
+            new \App\Libraries\Localization\SlugGenerator(),
+            new \App\Libraries\Localization\RequestLocaleResolver(
+                $request instanceof \CodeIgniter\HTTP\IncomingRequest ? $request : null
+            ),
+        );
+    }
+
     public static function categoryResponseMapper(bool $getShared = true): \dcardenasl\Ci4ApiCore\Mappers\ResponseMapperInterface
     {
         if ($getShared) {
@@ -25,7 +56,8 @@ trait CatalogDomainServices
 
         return new \App\Services\Catalog\CategoryService(
             new \dcardenasl\Ci4ApiCore\Repositories\GenericRepository(model(\App\Models\CategoryModel::class)),
-            static::categoryResponseMapper()
+            static::categoryResponseMapper(),
+            static::localizedTranslationStore(),
         );
     }
 
@@ -48,7 +80,8 @@ trait CatalogDomainServices
 
         return new \App\Services\Catalog\TechniqueService(
             new \dcardenasl\Ci4ApiCore\Repositories\GenericRepository(model(\App\Models\TechniqueModel::class)),
-            static::techniqueResponseMapper()
+            static::techniqueResponseMapper(),
+            static::localizedTranslationStore(),
         );
     }
 
@@ -71,7 +104,9 @@ trait CatalogDomainServices
 
         return new \App\Services\Catalog\CollectionItemService(
             new \dcardenasl\Ci4ApiCore\Repositories\GenericRepository(model(\App\Models\CollectionItemModel::class)),
-            static::collectionItemResponseMapper()
+            static::collectionItemResponseMapper(),
+            static::localizedTranslationStore(),
+            static::publicSlugStore(),
         );
     }
 }
