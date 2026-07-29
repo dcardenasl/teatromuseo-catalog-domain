@@ -99,30 +99,45 @@ final class TeatroMuseoCatalogSeeder extends Seeder
                 'company_history' => null,
                 'is_active' => 1,
             ]);
+
+            $itemId = (int) $this->db->table('collection_items')->where('inventory_code', $def['inventory_code'])->get()->getRow()->id;
+
+            // Sync translations
+            $translationRows = [];
+            foreach ($def['translations'] as $locale => $fields) {
+                $translationRows[] = ['locale' => $locale, ...$fields];
+            }
+            $translationStore->sync('collection_item', $itemId, $translationRows);
+
+            // Sync technique associations
+            if (!empty($def['technique_slug']) && isset($techniqueIds[$def['technique_slug']])) {
+                $techId = $techniqueIds[$def['technique_slug']];
+                $this->db->table('collection_item_technique')->where('collection_item_id', $itemId)->delete();
+                $this->db->table('collection_item_technique')->insert([
+                    'collection_item_id' => $itemId,
+                    'technique_id' => $techId,
+                ]);
+            }
         }
 
         $this->syncPublicSlugs();
     }
 
     /**
-     * Ensure every seeded item carries its per-locale routing slug. Existing
-     * slugs are preserved (PublicSlugStore only fills the gaps), so re-running
-     * the seeder never moves a published URL.
+     * Ensure every seeded item carries its per-locale routing slug across all 4 locales.
      */
     private function syncPublicSlugs(): void
     {
-        $slugStore = new \App\Libraries\Localization\PublicSlugStore(
-            new \App\Models\CatalogPublicSlugModel(),
-            new \App\Libraries\Localization\SlugGenerator(),
-            new \App\Libraries\Localization\RequestLocaleResolver(),
+        $slugStore = new PublicSlugStore(
+            new CatalogPublicSlugModel(),
+            new SlugGenerator(),
+            new RequestLocaleResolver(),
         );
-        $legacyLocale = config('Localization')->legacyFallbackLocale;
 
-        $rows = $this->db->table('collection_items')->select('id, name')->get()->getResultArray();
-        foreach ($rows as $row) {
+        $items = $this->db->table('collection_items')->select('id, inventory_code')->get()->getResultArray();
+        foreach ($items as $row) {
             $itemId = (int) ($row['id'] ?? 0);
-            $name = trim((string) ($row['name'] ?? ''));
-            if ($itemId < 1 || $name === '') {
+            if ($itemId < 1) {
                 continue;
             }
 
