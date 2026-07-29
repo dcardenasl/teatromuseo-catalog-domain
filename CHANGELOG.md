@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Localized catalog seed data and slug sync** — catalog seeders now ship multilingual content and keep public slugs synchronized for localized collection items.
 - **Catalog translations & public slug store** — added `CatalogTranslationModel`, `CatalogPublicSlugModel`, and migrations `2026-07-28-050000_CreateCatalogTranslationsTable`, `2026-07-28-050100_CreateCatalogPublicSlugsTable`, `2026-07-28-050200_BackfillCatalogTranslationsAndSlugs` to support localized names/summaries and slug-based routing for collection items, categories, and techniques.
 - **Public Collection Item API** — created `PublicCollectionItemController` and `PublicCatalogEndpoints` documentation to expose public collection items, categories, and techniques with i18n translation support and cover/gallery resolution.
 - **`CategoryController` / `categories` endpoints** — CRUD module for catalog categories (name, slug, icon, sort order), scaffolded via `make-crud.sh`.
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Localized updates and technique ordering** — translation writes now reuse the current record correctly, and related techniques keep a stable display order.
 - **`DomainPermissions::PERMISSIONS`** — registered the `cms.category.*` / `cms.technique.*` /
   `cms.collectionItem.*` codes that `catalog.php` routes and `show()` permission checks already
   referenced; `domain:sync-permissions` now actually grants them, and `show()` no longer checks
