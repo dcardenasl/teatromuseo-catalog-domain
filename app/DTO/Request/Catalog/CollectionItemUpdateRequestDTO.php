@@ -63,6 +63,10 @@ readonly class CollectionItemUpdateRequestDTO extends BaseRequestDTO
     #[OA\Property(description: 'is_active', type: 'integer', nullable: true)]
     public ?int $is_active;
 
+    /** @var list<array<string, mixed>>|null */
+    #[OA\Property(description: 'Localized content rows keyed by locale code', type: 'array', nullable: true, items: new OA\Items(type: 'object'))]
+    public ?array $translations;
+
     /**
      * @return array<string, string>
      */
@@ -95,6 +99,7 @@ readonly class CollectionItemUpdateRequestDTO extends BaseRequestDTO
             'links' => 'permit_empty|string',
             'company_history' => 'permit_empty|string',
             'is_active' => 'permit_empty|integer',
+            'translations' => 'permit_empty',
         ];
     }
 
@@ -129,6 +134,9 @@ readonly class CollectionItemUpdateRequestDTO extends BaseRequestDTO
         $this->links = $data['links'] ?? null;
         $this->company_history = $data['company_history'] ?? null;
         $this->is_active = isset($data['is_active']) ? (int) $data['is_active'] : null;
+        $this->translations = array_key_exists('translations', $data) && is_array($data['translations'])
+            ? array_values($data['translations'])
+            : null;
     }
 
     /**
@@ -163,6 +171,6 @@ readonly class CollectionItemUpdateRequestDTO extends BaseRequestDTO
             'links' => $this->links,
             'company_history' => $this->company_history,
             'is_active' => $this->is_active,
-        ], static fn (mixed $value): bool => $value !== null);
+        ], static fn (mixed $value): bool => $value !== null) + ($this->translations !== null ? ['translations' => $this->translations] : []);
     }
 }

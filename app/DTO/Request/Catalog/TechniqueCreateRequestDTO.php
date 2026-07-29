@@ -23,6 +23,10 @@ readonly class TechniqueCreateRequestDTO extends BaseRequestDTO
     #[OA\Property(description: 'sort_order', type: 'integer', nullable: true)]
     public ?int $sort_order;
 
+    /** @var list<array<string, mixed>> */
+    #[OA\Property(description: 'Localized content rows keyed by locale code', type: 'array', items: new OA\Items(type: 'object'))]
+    public array $translations;
+
     /**
      * @return array<string, string>
      */
@@ -35,6 +39,7 @@ readonly class TechniqueCreateRequestDTO extends BaseRequestDTO
             'video_url' => 'permit_empty|string|max_length[255]',
             'pdf_file_id' => 'permit_empty|integer',
             'sort_order' => 'permit_empty|integer',
+            'translations' => 'permit_empty',
         ];
     }
 
@@ -49,6 +54,7 @@ readonly class TechniqueCreateRequestDTO extends BaseRequestDTO
         $this->video_url = $data['video_url'] ?? null;
         $this->pdf_file_id = isset($data['pdf_file_id']) ? (int) $data['pdf_file_id'] : null;
         $this->sort_order = isset($data['sort_order']) ? (int) $data['sort_order'] : null;
+        $this->translations = is_array($data['translations'] ?? null) ? array_values($data['translations']) : [];
     }
 
     /**
@@ -63,6 +69,7 @@ readonly class TechniqueCreateRequestDTO extends BaseRequestDTO
             'video_url' => $this->video_url,
             'pdf_file_id' => $this->pdf_file_id,
             'sort_order' => $this->sort_order,
+            'translations' => $this->translations,
         ];
     }
 }

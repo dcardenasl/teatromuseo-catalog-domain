@@ -21,6 +21,10 @@ readonly class CategoryCreateRequestDTO extends BaseRequestDTO
     #[OA\Property(description: 'sort_order', type: 'integer', nullable: true)]
     public ?int $sort_order;
 
+    /** @var list<array<string, mixed>> */
+    #[OA\Property(description: 'Localized content rows keyed by locale code', type: 'array', items: new OA\Items(type: 'object'))]
+    public array $translations;
+
     /**
      * @return array<string, string>
      */
@@ -32,6 +36,7 @@ readonly class CategoryCreateRequestDTO extends BaseRequestDTO
             'icon' => 'permit_empty|string|max_length[255]',
             'short_description' => 'permit_empty|string',
             'sort_order' => 'permit_empty|integer',
+            'translations' => 'permit_empty',
         ];
     }
 
@@ -45,6 +50,7 @@ readonly class CategoryCreateRequestDTO extends BaseRequestDTO
         $this->icon = $data['icon'] ?? null;
         $this->short_description = $data['short_description'] ?? null;
         $this->sort_order = isset($data['sort_order']) ? (int) $data['sort_order'] : null;
+        $this->translations = is_array($data['translations'] ?? null) ? array_values($data['translations']) : [];
     }
 
     /**
@@ -58,6 +64,7 @@ readonly class CategoryCreateRequestDTO extends BaseRequestDTO
             'icon' => $this->icon,
             'short_description' => $this->short_description,
             'sort_order' => $this->sort_order,
+            'translations' => $this->translations,
         ];
     }
 }

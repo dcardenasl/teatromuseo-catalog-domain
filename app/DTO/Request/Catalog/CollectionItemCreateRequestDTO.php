@@ -63,6 +63,10 @@ readonly class CollectionItemCreateRequestDTO extends BaseRequestDTO
     #[OA\Property(description: 'is_active', type: 'integer')]
     public int $is_active;
 
+    /** @var list<array<string, mixed>> */
+    #[OA\Property(description: 'Localized content rows keyed by locale code', type: 'array', items: new OA\Items(type: 'object'))]
+    public array $translations;
+
     /**
      * @return array<string, string>
      */
@@ -95,6 +99,7 @@ readonly class CollectionItemCreateRequestDTO extends BaseRequestDTO
             'links' => 'permit_empty|string',
             'company_history' => 'permit_empty|string',
             'is_active' => 'required|integer',
+            'translations' => 'permit_empty',
         ];
     }
 
@@ -129,6 +134,7 @@ readonly class CollectionItemCreateRequestDTO extends BaseRequestDTO
         $this->links = $data['links'] ?? null;
         $this->company_history = $data['company_history'] ?? null;
         $this->is_active = (int) ($data['is_active'] ?? 0);
+        $this->translations = is_array($data['translations'] ?? null) ? array_values($data['translations']) : [];
     }
 
     /**
@@ -163,6 +169,7 @@ readonly class CollectionItemCreateRequestDTO extends BaseRequestDTO
             'links' => $this->links,
             'company_history' => $this->company_history,
             'is_active' => $this->is_active,
+            'translations' => $this->translations,
         ];
     }
 }

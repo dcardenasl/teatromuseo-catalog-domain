@@ -21,6 +21,10 @@ readonly class CategoryUpdateRequestDTO extends BaseRequestDTO
     #[OA\Property(description: 'sort_order', type: 'integer', nullable: true)]
     public ?int $sort_order;
 
+    /** @var list<array<string, mixed>>|null */
+    #[OA\Property(description: 'Localized content rows keyed by locale code', type: 'array', nullable: true, items: new OA\Items(type: 'object'))]
+    public ?array $translations;
+
     /**
      * @return array<string, string>
      */
@@ -32,6 +36,7 @@ readonly class CategoryUpdateRequestDTO extends BaseRequestDTO
             'icon' => 'permit_empty|string|max_length[255]',
             'short_description' => 'permit_empty|string',
             'sort_order' => 'permit_empty|integer',
+            'translations' => 'permit_empty',
         ];
     }
 
@@ -45,6 +50,9 @@ readonly class CategoryUpdateRequestDTO extends BaseRequestDTO
         $this->icon = $data['icon'] ?? null;
         $this->short_description = $data['short_description'] ?? null;
         $this->sort_order = isset($data['sort_order']) ? (int) $data['sort_order'] : null;
+        $this->translations = array_key_exists('translations', $data) && is_array($data['translations'])
+            ? array_values($data['translations'])
+            : null;
     }
 
     /**
@@ -58,6 +66,6 @@ readonly class CategoryUpdateRequestDTO extends BaseRequestDTO
             'icon' => $this->icon,
             'short_description' => $this->short_description,
             'sort_order' => $this->sort_order,
-        ], static fn (mixed $value): bool => $value !== null);
+        ], static fn (mixed $value): bool => $value !== null) + ($this->translations !== null ? ['translations' => $this->translations] : []);
     }
 }

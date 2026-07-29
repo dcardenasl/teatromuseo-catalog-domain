@@ -14,6 +14,8 @@ readonly class CollectionItemIndexRequestDTO extends BaseRequestDTO
     public int $per_page;
     public ?string $search;
     public string $sort;
+    /** @var array<string, mixed> */
+    public array $filter;
 
     /**
      * @return array<string, string>
@@ -25,6 +27,7 @@ readonly class CollectionItemIndexRequestDTO extends BaseRequestDTO
             'per_page'  => 'permit_empty|is_natural_no_zero|less_than[101]',
             'search'    => 'permit_empty|string|max_length[100]',
             'sort'      => 'permit_empty|max_length[100]',
+            'filter'    => 'permit_empty',
         ];
     }
 
@@ -37,6 +40,7 @@ readonly class CollectionItemIndexRequestDTO extends BaseRequestDTO
         $this->per_page = isset($data['per_page']) ? (int) $data['per_page'] : 20;
         $this->search = $data['search'] ?? null;
         $this->sort = (string) ($data['sort'] ?? '');
+        $this->filter = is_array($data['filter'] ?? null) ? $data['filter'] : [];
     }
 
     /**
@@ -49,6 +53,7 @@ readonly class CollectionItemIndexRequestDTO extends BaseRequestDTO
             'per_page' => $this->per_page,
             'search' => $this->search,
             'sort' => $this->sort,
+            'filter' => $this->filter,
         ];
     }
 }
