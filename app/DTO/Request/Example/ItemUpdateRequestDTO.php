@@ -23,17 +23,27 @@ readonly class ItemUpdateRequestDTO extends BaseRequestDTO
         ];
     }
 
+    /** @var array<string, mixed> */
+    private array $mappedFields;
+
     protected function map(array $data): void
     {
-        $this->name = $data['name'] ?? null;
-        $this->description = $data['description'] ?? null;
+        $this->name = array_key_exists('name', $data) && $data['name'] !== null ? (string) $data['name'] : null;
+        $this->description = array_key_exists('description', $data) && $data['description'] !== null ? (string) $data['description'] : null;
+
+        $mappedFields = [];
+        if (array_key_exists('name', $data)) {
+            $mappedFields['name'] = $this->name;
+        }
+        if (array_key_exists('description', $data)) {
+            $mappedFields['description'] = $this->description;
+        }
+
+        $this->mappedFields = $mappedFields;
     }
 
     public function toArray(): array
     {
-        return array_filter([
-            'name' => $this->name,
-            'description' => $this->description,
-        ], fn ($v) => $v !== null);
+        return $this->mappedFields;
     }
 }

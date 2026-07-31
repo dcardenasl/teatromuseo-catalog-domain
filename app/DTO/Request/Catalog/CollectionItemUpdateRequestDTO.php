@@ -103,40 +103,135 @@ readonly class CollectionItemUpdateRequestDTO extends BaseRequestDTO
         ];
     }
 
+    /** @var array<string, mixed> */
+    private array $mappedFields;
+
     /**
+     * NOT NULL columns (name, category_id, status, show_in_totem,
+     * is_active) never accept an explicit null — treated the same as
+     * omitting the field, matching the DB constraint. Every other field
+     * (all the optional descriptive metadata, cover_file_id,
+     * gallery_file_ids) is a nullable column: an explicit null preserves
+     * through to toArray() and actually clears it — the bug this fixes is
+     * array_filter() silently dropping every null, which made it
+     * impossible to ever clear any of these fields via update.
+     *
      * @param array<string, mixed> $data
      */
     protected function map(array $data): void
     {
-        $this->name = $data['name'] ?? null;
-        $this->category_id = isset($data['category_id']) ? (int) $data['category_id'] : null;
-        $this->inventory_code = $data['inventory_code'] ?? null;
-        $this->status = $data['status'] ?? null;
-        $this->summary = $data['summary'] ?? null;
-        $this->curiosidad = $data['curiosidad'] ?? null;
-        $this->contenido = $data['contenido'] ?? null;
-        $this->origin = $data['origin'] ?? null;
-        $this->period = $data['period'] ?? null;
-        $this->creator = $data['creator'] ?? null;
-        $this->ubicacion = $data['ubicacion'] ?? null;
-        $this->materials = $data['materials'] ?? null;
-        $this->cover_file_id = isset($data['cover_file_id']) ? (int) $data['cover_file_id'] : null;
-        $this->gallery_file_ids = $data['gallery_file_ids'] ?? null;
-        $this->show_in_totem = isset($data['show_in_totem']) ? (int) $data['show_in_totem'] : null;
-        $this->internal_notes = $data['internal_notes'] ?? null;
-        $this->collection_number = $data['collection_number'] ?? null;
-        $this->collection_group = $data['collection_group'] ?? null;
-        $this->physical_description = $data['physical_description'] ?? null;
-        $this->dimensions = $data['dimensions'] ?? null;
-        $this->ingress_type = $data['ingress_type'] ?? null;
-        $this->donated_by = $data['donated_by'] ?? null;
-        $this->tags = $data['tags'] ?? null;
-        $this->links = $data['links'] ?? null;
-        $this->company_history = $data['company_history'] ?? null;
-        $this->is_active = isset($data['is_active']) ? (int) $data['is_active'] : null;
-        $this->translations = array_key_exists('translations', $data) && is_array($data['translations'])
-            ? array_values($data['translations'])
-            : null;
+        $this->name = array_key_exists('name', $data) && $data['name'] !== null ? (string) $data['name'] : null;
+        $this->category_id = array_key_exists('category_id', $data) && $data['category_id'] !== null && $data['category_id'] !== '' ? (int) $data['category_id'] : null;
+        $this->inventory_code = array_key_exists('inventory_code', $data) && $data['inventory_code'] !== null && $data['inventory_code'] !== '' ? (string) $data['inventory_code'] : null;
+        $this->status = array_key_exists('status', $data) && $data['status'] !== null ? (string) $data['status'] : null;
+        $this->summary = array_key_exists('summary', $data) && $data['summary'] !== null && $data['summary'] !== '' ? (string) $data['summary'] : null;
+        $this->curiosidad = array_key_exists('curiosidad', $data) && $data['curiosidad'] !== null && $data['curiosidad'] !== '' ? (string) $data['curiosidad'] : null;
+        $this->contenido = array_key_exists('contenido', $data) && $data['contenido'] !== null && $data['contenido'] !== '' ? (string) $data['contenido'] : null;
+        $this->origin = array_key_exists('origin', $data) && $data['origin'] !== null && $data['origin'] !== '' ? (string) $data['origin'] : null;
+        $this->period = array_key_exists('period', $data) && $data['period'] !== null && $data['period'] !== '' ? (string) $data['period'] : null;
+        $this->creator = array_key_exists('creator', $data) && $data['creator'] !== null && $data['creator'] !== '' ? (string) $data['creator'] : null;
+        $this->ubicacion = array_key_exists('ubicacion', $data) && $data['ubicacion'] !== null && $data['ubicacion'] !== '' ? (string) $data['ubicacion'] : null;
+        $this->materials = array_key_exists('materials', $data) && $data['materials'] !== null && $data['materials'] !== '' ? (string) $data['materials'] : null;
+        $this->cover_file_id = array_key_exists('cover_file_id', $data) && $data['cover_file_id'] !== null && $data['cover_file_id'] !== '' ? (int) $data['cover_file_id'] : null;
+        $this->gallery_file_ids = array_key_exists('gallery_file_ids', $data) && $data['gallery_file_ids'] !== null ? (string) $data['gallery_file_ids'] : null;
+        $this->show_in_totem = array_key_exists('show_in_totem', $data) && $data['show_in_totem'] !== null ? (int) $data['show_in_totem'] : null;
+        $this->internal_notes = array_key_exists('internal_notes', $data) && $data['internal_notes'] !== null && $data['internal_notes'] !== '' ? (string) $data['internal_notes'] : null;
+        $this->collection_number = array_key_exists('collection_number', $data) && $data['collection_number'] !== null && $data['collection_number'] !== '' ? (string) $data['collection_number'] : null;
+        $this->collection_group = array_key_exists('collection_group', $data) && $data['collection_group'] !== null && $data['collection_group'] !== '' ? (string) $data['collection_group'] : null;
+        $this->physical_description = array_key_exists('physical_description', $data) && $data['physical_description'] !== null && $data['physical_description'] !== '' ? (string) $data['physical_description'] : null;
+        $this->dimensions = array_key_exists('dimensions', $data) && $data['dimensions'] !== null && $data['dimensions'] !== '' ? (string) $data['dimensions'] : null;
+        $this->ingress_type = array_key_exists('ingress_type', $data) && $data['ingress_type'] !== null && $data['ingress_type'] !== '' ? (string) $data['ingress_type'] : null;
+        $this->donated_by = array_key_exists('donated_by', $data) && $data['donated_by'] !== null && $data['donated_by'] !== '' ? (string) $data['donated_by'] : null;
+        $this->tags = array_key_exists('tags', $data) && $data['tags'] !== null && $data['tags'] !== '' ? (string) $data['tags'] : null;
+        $this->links = array_key_exists('links', $data) && $data['links'] !== null && $data['links'] !== '' ? (string) $data['links'] : null;
+        $this->company_history = array_key_exists('company_history', $data) && $data['company_history'] !== null && $data['company_history'] !== '' ? (string) $data['company_history'] : null;
+        $this->is_active = array_key_exists('is_active', $data) && $data['is_active'] !== null ? (int) $data['is_active'] : null;
+        $this->translations = array_key_exists('translations', $data) && is_array($data['translations']) ? array_values($data['translations']) : null;
+
+        $mappedFields = [];
+        if ($this->name !== null) {
+            $mappedFields['name'] = $this->name;
+        }
+        if ($this->category_id !== null) {
+            $mappedFields['category_id'] = $this->category_id;
+        }
+        if (array_key_exists('inventory_code', $data)) {
+            $mappedFields['inventory_code'] = $this->inventory_code;
+        }
+        if ($this->status !== null) {
+            $mappedFields['status'] = $this->status;
+        }
+        if (array_key_exists('summary', $data)) {
+            $mappedFields['summary'] = $this->summary;
+        }
+        if (array_key_exists('curiosidad', $data)) {
+            $mappedFields['curiosidad'] = $this->curiosidad;
+        }
+        if (array_key_exists('contenido', $data)) {
+            $mappedFields['contenido'] = $this->contenido;
+        }
+        if (array_key_exists('origin', $data)) {
+            $mappedFields['origin'] = $this->origin;
+        }
+        if (array_key_exists('period', $data)) {
+            $mappedFields['period'] = $this->period;
+        }
+        if (array_key_exists('creator', $data)) {
+            $mappedFields['creator'] = $this->creator;
+        }
+        if (array_key_exists('ubicacion', $data)) {
+            $mappedFields['ubicacion'] = $this->ubicacion;
+        }
+        if (array_key_exists('materials', $data)) {
+            $mappedFields['materials'] = $this->materials;
+        }
+        if (array_key_exists('cover_file_id', $data)) {
+            $mappedFields['cover_file_id'] = $this->cover_file_id;
+        }
+        if (array_key_exists('gallery_file_ids', $data)) {
+            $mappedFields['gallery_file_ids'] = $this->gallery_file_ids;
+        }
+        if ($this->show_in_totem !== null) {
+            $mappedFields['show_in_totem'] = $this->show_in_totem;
+        }
+        if (array_key_exists('internal_notes', $data)) {
+            $mappedFields['internal_notes'] = $this->internal_notes;
+        }
+        if (array_key_exists('collection_number', $data)) {
+            $mappedFields['collection_number'] = $this->collection_number;
+        }
+        if (array_key_exists('collection_group', $data)) {
+            $mappedFields['collection_group'] = $this->collection_group;
+        }
+        if (array_key_exists('physical_description', $data)) {
+            $mappedFields['physical_description'] = $this->physical_description;
+        }
+        if (array_key_exists('dimensions', $data)) {
+            $mappedFields['dimensions'] = $this->dimensions;
+        }
+        if (array_key_exists('ingress_type', $data)) {
+            $mappedFields['ingress_type'] = $this->ingress_type;
+        }
+        if (array_key_exists('donated_by', $data)) {
+            $mappedFields['donated_by'] = $this->donated_by;
+        }
+        if (array_key_exists('tags', $data)) {
+            $mappedFields['tags'] = $this->tags;
+        }
+        if (array_key_exists('links', $data)) {
+            $mappedFields['links'] = $this->links;
+        }
+        if (array_key_exists('company_history', $data)) {
+            $mappedFields['company_history'] = $this->company_history;
+        }
+        if ($this->is_active !== null) {
+            $mappedFields['is_active'] = $this->is_active;
+        }
+        if ($this->translations !== null) {
+            $mappedFields['translations'] = $this->translations;
+        }
+
+        $this->mappedFields = $mappedFields;
     }
 
     /**
@@ -144,33 +239,6 @@ readonly class CollectionItemUpdateRequestDTO extends BaseRequestDTO
      */
     public function toArray(): array
     {
-        return array_filter([
-            'name' => $this->name,
-            'category_id' => $this->category_id,
-            'inventory_code' => $this->inventory_code,
-            'status' => $this->status,
-            'summary' => $this->summary,
-            'curiosidad' => $this->curiosidad,
-            'contenido' => $this->contenido,
-            'origin' => $this->origin,
-            'period' => $this->period,
-            'creator' => $this->creator,
-            'ubicacion' => $this->ubicacion,
-            'materials' => $this->materials,
-            'cover_file_id' => $this->cover_file_id,
-            'gallery_file_ids' => $this->gallery_file_ids,
-            'show_in_totem' => $this->show_in_totem,
-            'internal_notes' => $this->internal_notes,
-            'collection_number' => $this->collection_number,
-            'collection_group' => $this->collection_group,
-            'physical_description' => $this->physical_description,
-            'dimensions' => $this->dimensions,
-            'ingress_type' => $this->ingress_type,
-            'donated_by' => $this->donated_by,
-            'tags' => $this->tags,
-            'links' => $this->links,
-            'company_history' => $this->company_history,
-            'is_active' => $this->is_active,
-        ], static fn (mixed $value): bool => $value !== null) + ($this->translations !== null ? ['translations' => $this->translations] : []);
+        return $this->mappedFields;
     }
 }

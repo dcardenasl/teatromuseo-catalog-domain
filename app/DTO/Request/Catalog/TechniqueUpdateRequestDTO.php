@@ -43,20 +43,53 @@ readonly class TechniqueUpdateRequestDTO extends BaseRequestDTO
         ];
     }
 
+    /** @var array<string, mixed> */
+    private array $mappedFields;
+
     /**
+     * NOT NULL columns (name, slug) never accept an explicit null —
+     * treated the same as omitting the field. Nullable columns (summary,
+     * video_url, pdf_file_id, sort_order) preserve an explicit null so it
+     * reaches toArray() and actually clears the column — the bug this
+     * fixes is array_filter() silently dropping every null, which made it
+     * impossible to ever clear a nullable field via update.
+     *
      * @param array<string, mixed> $data
      */
     protected function map(array $data): void
     {
-        $this->name = $data['name'] ?? null;
-        $this->slug = $data['slug'] ?? null;
-        $this->summary = $data['summary'] ?? null;
-        $this->video_url = $data['video_url'] ?? null;
-        $this->pdf_file_id = isset($data['pdf_file_id']) ? (int) $data['pdf_file_id'] : null;
-        $this->sort_order = isset($data['sort_order']) ? (int) $data['sort_order'] : null;
-        $this->translations = array_key_exists('translations', $data) && is_array($data['translations'])
-            ? array_values($data['translations'])
-            : null;
+        $this->name = array_key_exists('name', $data) && $data['name'] !== null ? (string) $data['name'] : null;
+        $this->slug = array_key_exists('slug', $data) && $data['slug'] !== null ? (string) $data['slug'] : null;
+        $this->summary = array_key_exists('summary', $data) && $data['summary'] !== null && $data['summary'] !== '' ? (string) $data['summary'] : null;
+        $this->video_url = array_key_exists('video_url', $data) && $data['video_url'] !== null && $data['video_url'] !== '' ? (string) $data['video_url'] : null;
+        $this->pdf_file_id = array_key_exists('pdf_file_id', $data) && $data['pdf_file_id'] !== null && $data['pdf_file_id'] !== '' ? (int) $data['pdf_file_id'] : null;
+        $this->sort_order = array_key_exists('sort_order', $data) && $data['sort_order'] !== null && $data['sort_order'] !== '' ? (int) $data['sort_order'] : null;
+        $this->translations = array_key_exists('translations', $data) && is_array($data['translations']) ? array_values($data['translations']) : null;
+
+        $mappedFields = [];
+        if ($this->name !== null) {
+            $mappedFields['name'] = $this->name;
+        }
+        if ($this->slug !== null) {
+            $mappedFields['slug'] = $this->slug;
+        }
+        if (array_key_exists('summary', $data)) {
+            $mappedFields['summary'] = $this->summary;
+        }
+        if (array_key_exists('video_url', $data)) {
+            $mappedFields['video_url'] = $this->video_url;
+        }
+        if (array_key_exists('pdf_file_id', $data)) {
+            $mappedFields['pdf_file_id'] = $this->pdf_file_id;
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $mappedFields['sort_order'] = $this->sort_order;
+        }
+        if ($this->translations !== null) {
+            $mappedFields['translations'] = $this->translations;
+        }
+
+        $this->mappedFields = $mappedFields;
     }
 
     /**
@@ -64,13 +97,6 @@ readonly class TechniqueUpdateRequestDTO extends BaseRequestDTO
      */
     public function toArray(): array
     {
-        return array_filter([
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'summary' => $this->summary,
-            'video_url' => $this->video_url,
-            'pdf_file_id' => $this->pdf_file_id,
-            'sort_order' => $this->sort_order,
-        ], static fn (mixed $value): bool => $value !== null) + ($this->translations !== null ? ['translations' => $this->translations] : []);
+        return $this->mappedFields;
     }
 }

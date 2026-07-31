@@ -40,19 +40,49 @@ readonly class CategoryUpdateRequestDTO extends BaseRequestDTO
         ];
     }
 
+    /** @var array<string, mixed> */
+    private array $mappedFields;
+
     /**
+     * NOT NULL columns (name, slug) never accept an explicit null —
+     * treated the same as omitting the field. Nullable columns (icon,
+     * short_description, sort_order) preserve an explicit null so it
+     * reaches toArray() and actually clears the column — the bug this
+     * fixes is array_filter() silently dropping every null, which made it
+     * impossible to ever clear a nullable field via update.
+     *
      * @param array<string, mixed> $data
      */
     protected function map(array $data): void
     {
-        $this->name = $data['name'] ?? null;
-        $this->slug = $data['slug'] ?? null;
-        $this->icon = $data['icon'] ?? null;
-        $this->short_description = $data['short_description'] ?? null;
-        $this->sort_order = isset($data['sort_order']) ? (int) $data['sort_order'] : null;
-        $this->translations = array_key_exists('translations', $data) && is_array($data['translations'])
-            ? array_values($data['translations'])
-            : null;
+        $this->name = array_key_exists('name', $data) && $data['name'] !== null ? (string) $data['name'] : null;
+        $this->slug = array_key_exists('slug', $data) && $data['slug'] !== null ? (string) $data['slug'] : null;
+        $this->icon = array_key_exists('icon', $data) && $data['icon'] !== null && $data['icon'] !== '' ? (string) $data['icon'] : null;
+        $this->short_description = array_key_exists('short_description', $data) && $data['short_description'] !== null && $data['short_description'] !== '' ? (string) $data['short_description'] : null;
+        $this->sort_order = array_key_exists('sort_order', $data) && $data['sort_order'] !== null && $data['sort_order'] !== '' ? (int) $data['sort_order'] : null;
+        $this->translations = array_key_exists('translations', $data) && is_array($data['translations']) ? array_values($data['translations']) : null;
+
+        $mappedFields = [];
+        if ($this->name !== null) {
+            $mappedFields['name'] = $this->name;
+        }
+        if ($this->slug !== null) {
+            $mappedFields['slug'] = $this->slug;
+        }
+        if (array_key_exists('icon', $data)) {
+            $mappedFields['icon'] = $this->icon;
+        }
+        if (array_key_exists('short_description', $data)) {
+            $mappedFields['short_description'] = $this->short_description;
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $mappedFields['sort_order'] = $this->sort_order;
+        }
+        if ($this->translations !== null) {
+            $mappedFields['translations'] = $this->translations;
+        }
+
+        $this->mappedFields = $mappedFields;
     }
 
     /**
@@ -60,12 +90,6 @@ readonly class CategoryUpdateRequestDTO extends BaseRequestDTO
      */
     public function toArray(): array
     {
-        return array_filter([
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'icon' => $this->icon,
-            'short_description' => $this->short_description,
-            'sort_order' => $this->sort_order,
-        ], static fn (mixed $value): bool => $value !== null) + ($this->translations !== null ? ['translations' => $this->translations] : []);
+        return $this->mappedFields;
     }
 }
