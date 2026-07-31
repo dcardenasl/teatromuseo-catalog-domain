@@ -19,6 +19,31 @@
 
 ## ✅ Completadas
 
+### CAT-DOM-002 — Fix "no se puede limpiar un campo nullable vía update" en las 4 *UpdateRequestDTO (2026-07-30)
+- **Qué**: `CollectionItemUpdateRequestDTO` (24 campos, la mayoría metadata opcional nullable —
+  el más afectado del monorepo), `TechniqueUpdateRequestDTO`, `CategoryUpdateRequestDTO`,
+  `ItemUpdateRequestDTO` (Example, scaffolding demo sin tabla real, corregido igual por
+  consistencia). Mismo bug que en event-domain: `array_filter($v !== null)` descartaba cualquier
+  campo enviado como `null`. Corregido con ternario de una línea por propiedad +
+  `array_key_exists()` + acumulador `$mappedFields`, NOT NULL vs nullable decidido por `DESCRIBE`
+  real (`name`/`category_id`/`status`/`show_in_totem`/`is_active` protegidos; el resto —
+  incluidos `cover_file_id`/`gallery_file_ids` — ahora sí se pueden limpiar).
+- **Verificado**: `composer quality` ✅ (205/205 tests, PHPStan sin errores).
+
+### CAT-FILE-GUARD-001 — Endpoints internal/files/* para el Hub (usage-check + invalidate-cache) (2026-07-30)
+- **Qué**: `App\Filters\HubSignatureFilter` (alias `hubsignature`) verifica llamadas HMAC del
+  Hub (`hub.internalSecret`/env `HUB_INTERNAL_SECRET`, fail-closed). Nuevo
+  `App\Services\Catalog\FileUsageService::getUsagesByHubFileId()` (no existía en este domain,
+  a diferencia de cms-domain) — prefiltra por SQL (`cover_file_id` o `LIKE` sobre
+  `gallery_file_ids`) y verifica membresía CSV exacta en PHP para evitar falsos positivos por
+  substring (file 1 no debe matchear "21" ni "12,1"). `InternalFileController::usage()`/
+  `invalidateCache()` bajo `internal/files/*`, extendiendo `\CodeIgniter\Controller` (no
+  `ApiController`) — excepción documentada en `ControllerDtoRequestContractsTest`.
+- **Por qué**: el Hub no veía usages de `collection_items.cover_file_id/gallery_file_ids` antes
+  de borrar un archivo, y `HubClient::invalidateFileMetaCache()` era dead code.
+- **Verificado**: end-to-end real contra el Hub (409 en delete de archivo en uso, invalidación
+  reflejada sin TTL tras `replace()`), `composer quality` ✅ (205/205 tests).
+
 ### CAT-DOM-001 — Multi-idioma (port del event-domain) + slugs públicos por locale (2026-07-28)
 - **Qué**: port 1:1 del stack de localización del event-domain — `catalog_translations` (EAV
   locale-agnóstico), `LocalizedTranslationStore`, `TranslationFieldCatalog`
