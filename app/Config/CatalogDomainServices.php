@@ -109,4 +109,13 @@ trait CatalogDomainServices
             static::publicSlugStore(),
         );
     }
+
+    public static function fileUsageService(bool $getShared = true): \App\Services\Catalog\FileUsageService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('fileUsageService');
+        }
+
+        return new \App\Services\Catalog\FileUsageService(\Config\Database::connect());
+    }
 }
