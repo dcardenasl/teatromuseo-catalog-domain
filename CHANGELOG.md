@@ -17,10 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`CollectionItemController` / `collection-items` endpoints** — CRUD module for museum collection items, with a required FK to `categories` and an N:M pivot (`collection_item_technique`) linking items to `techniques`.
 - **`catalog:import-excel` command** — bulk-imports collection items from the museum's Excel template, resolving/creating categories and techniques by name and syncing the pivot table.
 - **`/api/v1/public/catalog/*` endpoints** — app-key-gated read-only endpoints (categories, techniques, collection items) for `teatromuseo-web` to consume, with cover/gallery images resolved to Hub file metadata via `HubClient::resolvePublicFileMeta()`.
+- **`internal/files/*` endpoints** — `HubSignatureFilter` + `InternalFileController` let the Hub
+  check whether a file is referenced by a collection item (`cover_file_id`/`gallery_file_ids`)
+  before deleting it, and invalidate this domain's cached file metadata after a replace, via HMAC-signed requests.
 
 ### Fixed
 
 - **Localized updates and technique ordering** — translation writes now reuse the current record correctly, and related techniques keep a stable display order.
+- **`CollectionItemUpdateRequestDTO`, `TechniqueUpdateRequestDTO`, `CategoryUpdateRequestDTO`, `ItemUpdateRequestDTO`** — update requests can now explicitly clear a nullable field to `null` instead of silently dropping it.
 - **`DomainPermissions::PERMISSIONS`** — registered the `cms.category.*` / `cms.technique.*` /
   `cms.collectionItem.*` codes that `catalog.php` routes and `show()` permission checks already
   referenced; `domain:sync-permissions` now actually grants them, and `show()` no longer checks
