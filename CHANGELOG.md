@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cms.collectionItem.*` codes that `catalog.php` routes and `show()` permission checks already
   referenced; `domain:sync-permissions` now actually grants them, and `show()` no longer checks
   against a code (`category.read`, etc.) that was never registered.
+- **`DomainPermissions::PERMISSIONS` / `catalog.php` routes / catalog controllers** — renamed the
+  `cms.category.*` / `cms.technique.*` / `cms.collectionItem.*` permission codes to
+  `catalog.category.*` / `catalog.technique.*` / `catalog.collectionItem.*` so this domain's own
+  namespace is used instead of borrowing the CMS domain's prefix.
 - **`CategoryResponseDTO` / `TechniqueResponseDTO` / `CollectionItemResponseDTO`** — `created_at`/
   `updated_at` are normalized to strings in `fromArray()` instead of passing through a `Time`
   object where the constructor declares `?string`.
