@@ -32,7 +32,7 @@ class TechniqueController extends ApiController
     {
         return $this->handleRequest(
             function (TechniqueIndexRequestDTO $dto, SecurityContext $context): mixed {
-                if (!$context->hasPermission('cms.technique.read')) {
+                if (!$context->hasPermission('catalog.technique.read')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->techniqueService->index($dto, $context);
@@ -45,7 +45,7 @@ class TechniqueController extends ApiController
     {
         return $this->handleRequest(
             function (TechniqueCreateRequestDTO $dto, SecurityContext $context): mixed {
-                if (!$context->hasPermission('cms.technique.create')) {
+                if (!$context->hasPermission('catalog.technique.create')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->techniqueService->store($dto, $context);
@@ -58,7 +58,7 @@ class TechniqueController extends ApiController
     {
         return $this->handleRequest(
             function (TechniqueUpdateRequestDTO $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('cms.technique.update')) {
+                if (!$context->hasPermission('catalog.technique.update')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->techniqueService->update($id, $dto, $context);
@@ -71,7 +71,7 @@ class TechniqueController extends ApiController
     {
         return $this->handleRequest(
             function (array $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('cms.technique.read')) {
+                if (!$context->hasPermission('catalog.technique.read')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->techniqueService->show($id, $context);
@@ -83,7 +83,7 @@ class TechniqueController extends ApiController
     {
         return $this->handleRequest(
             function (array $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('cms.technique.delete')) {
+                if (!$context->hasPermission('catalog.technique.delete')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->techniqueService->destroy($id, $context);

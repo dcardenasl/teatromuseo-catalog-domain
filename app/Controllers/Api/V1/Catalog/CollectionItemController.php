@@ -32,7 +32,7 @@ class CollectionItemController extends ApiController
     {
         return $this->handleRequest(
             function (CollectionItemIndexRequestDTO $dto, SecurityContext $context): mixed {
-                if (!$context->hasPermission('cms.collectionItem.read')) {
+                if (!$context->hasPermission('catalog.collectionItem.read')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->collectionItemService->index($dto, $context);
@@ -45,7 +45,7 @@ class CollectionItemController extends ApiController
     {
         return $this->handleRequest(
             function (CollectionItemCreateRequestDTO $dto, SecurityContext $context): mixed {
-                if (!$context->hasPermission('cms.collectionItem.create')) {
+                if (!$context->hasPermission('catalog.collectionItem.create')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->collectionItemService->store($dto, $context);
@@ -58,7 +58,7 @@ class CollectionItemController extends ApiController
     {
         return $this->handleRequest(
             function (CollectionItemUpdateRequestDTO $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('cms.collectionItem.update')) {
+                if (!$context->hasPermission('catalog.collectionItem.update')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->collectionItemService->update($id, $dto, $context);
@@ -71,7 +71,7 @@ class CollectionItemController extends ApiController
     {
         return $this->handleRequest(
             function (array $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('cms.collectionItem.read')) {
+                if (!$context->hasPermission('catalog.collectionItem.read')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->collectionItemService->show($id, $context);
@@ -83,7 +83,7 @@ class CollectionItemController extends ApiController
     {
         return $this->handleRequest(
             function (array $dto, SecurityContext $context) use ($id): mixed {
-                if (!$context->hasPermission('cms.collectionItem.delete')) {
+                if (!$context->hasPermission('catalog.collectionItem.delete')) {
                     throw new \dcardenasl\Ci4ApiCore\Exceptions\AuthorizationException(lang('Api.forbidden'));
                 }
                 return $this->collectionItemService->destroy($id, $context);
