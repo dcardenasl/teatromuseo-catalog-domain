@@ -3,7 +3,7 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md`.
-> Última actualización: 2026-06-04 (DOM-109 completado — sync-permissions fail-loud + HubClient fix)
+> Última actualización: 2026-08-02 (CAT-DOM-003 ✅ completado — eliminado el seeder/datos de ejemplo)
 
 ---
 
@@ -18,6 +18,24 @@
 ---
 
 ## ✅ Completadas
+
+### CAT-DOM-003 — Eliminar el seeder de ejemplo y sus datos (2026-08-02)
+- **Qué**: David pidió que catalog-domain solo muestre lo que efectivamente viene de la BD
+  legacy de teatromuseo.cl. Confirmado con `legacy_migration_map` (tabla de control del hub):
+  **cero** filas con `target_system='catalog-domain'` — nunca se migró nada real a este
+  dominio. Los únicos 4 `collection_items` existentes ("Telón Azul", "Traje de Gala", "Máscara
+  de Lino", "Programa de Temporada") junto con sus categorías y técnicas eran 100% del seeder
+  `TeatroMuseoCatalogSeeder` ("Seeds representative museum catalog data"), que `init.sh`
+  corría en cada instalación nueva.
+- **Fix**: los 4 `collection_items` + 3 `categories` + 4 `techniques` borrados vía
+  `DELETE /api/v1/catalog/{collection-items,categories,techniques}/{id}` (soft-delete).
+  `TeatroMuseoCatalogSeeder.php` eliminado del todo; su llamada en `init.sh` removida.
+- **Consecuencia esperada**: `/museo/colección` en el sitio público queda vacío hasta que se
+  defina qué contenido legacy real (si existe) debería vivir aquí — confirmado con David antes
+  de ejecutar.
+- **Verificado**: `composer quality` ✅ (205 tests, 1 skip preexistente no relacionado,
+  PHPStan sin errores). Página pública verificada en vivo: renderiza correctamente el estado
+  vacío, sin errores.
 
 ### CAT-DOM-002 — Fix "no se puede limpiar un campo nullable vía update" en las 4 *UpdateRequestDTO (2026-07-30)
 - **Qué**: `CollectionItemUpdateRequestDTO` (24 campos, la mayoría metadata opcional nullable —
