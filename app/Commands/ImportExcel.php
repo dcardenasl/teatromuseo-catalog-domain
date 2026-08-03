@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Libraries\Localization\SlugGenerator;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 
@@ -47,6 +48,7 @@ class ImportExcel extends BaseCommand
         $techniqueModel = model(\App\Models\TechniqueModel::class);
         $itemModel = model(\App\Models\CollectionItemModel::class);
         $db = \Config\Database::connect();
+        $slugGenerator = new SlugGenerator();
 
         $imported = 0;
         $updated = 0;
@@ -66,7 +68,7 @@ class ImportExcel extends BaseCommand
             if (! $category) {
                 $catId = $categoryModel->insert([
                     'name' => $categoryName,
-                    'slug' => $this->slugify($categoryName),
+                    'slug' => $slugGenerator->slugify($categoryName),
                     'icon' => 'tag',
                     'short_description' => 'Colección de ' . $categoryName,
                 ]);
@@ -87,7 +89,7 @@ class ImportExcel extends BaseCommand
                     if (! $tech) {
                         $techId = $techniqueModel->insert([
                             'name' => $techName,
-                            'slug' => $this->slugify($techName),
+                            'slug' => $slugGenerator->slugify($techName),
                             'summary' => 'Técnica de ' . $techName,
                         ]);
                     } else {
@@ -162,15 +164,5 @@ class ImportExcel extends BaseCommand
         }
 
         CLI::write("Import complete. Imported: {$imported}, Updated: {$updated}", 'green');
-    }
-
-    private function slugify(string $value): string
-    {
-        $value = trim($value);
-        $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value) ?: $value;
-        $value = strtolower($value);
-        $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? $value;
-
-        return trim($value, '-') ?: 'sin-categoria';
     }
 }
