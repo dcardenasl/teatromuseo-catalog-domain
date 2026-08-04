@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Shared API core** — upgraded `dcardenasl/ci4-api-core` to `v1.1.1`.
+
 - **Catalog metadata cache versioning** — file metadata cache keys now carry the shared hub
   version, preventing stale cross-version results.
 - **Seed baseline** — demo catalog data and its seeded rows were removed from the domain baseline.
