@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Localized technique metadata** — public technique responses now expose localized metadata
+  consistently alongside the existing catalog content.
+
 - **Localized catalog seed data and slug sync** — catalog seeders now ship multilingual content and keep public slugs synchronized for localized collection items.
 - **Catalog translations & public slug store** — added `CatalogTranslationModel`, `CatalogPublicSlugModel`, and migrations `2026-07-28-050000_CreateCatalogTranslationsTable`, `2026-07-28-050100_CreateCatalogPublicSlugsTable`, `2026-07-28-050200_BackfillCatalogTranslationsAndSlugs` to support localized names/summaries and slug-based routing for collection items, categories, and techniques.
 - **Public Collection Item API** — created `PublicCollectionItemController` and `PublicCatalogEndpoints` documentation to expose public collection items, categories, and techniques with i18n translation support and cover/gallery resolution.
@@ -21,7 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   check whether a file is referenced by a collection item (`cover_file_id`/`gallery_file_ids`)
   before deleting it, and invalidate this domain's cached file metadata after a replace, via HMAC-signed requests.
 
+### Changed
+
+- **Catalog metadata cache versioning** — file metadata cache keys now carry the shared hub
+  version, preventing stale cross-version results.
+- **Seed baseline** — demo catalog data and its seeded rows were removed from the domain baseline.
+
 ### Fixed
+
+- **Deterministic catalog slugs** — localized transliteration now has a stable fallback, and the
+  Excel importer reuses the shared slug generator for consistent identifiers.
 
 - **Localized updates and technique ordering** — translation writes now reuse the current record correctly, and related techniques keep a stable display order.
 - **`CollectionItemUpdateRequestDTO`, `TechniqueUpdateRequestDTO`, `CategoryUpdateRequestDTO`, `ItemUpdateRequestDTO`** — update requests can now explicitly clear a nullable field to `null` instead of silently dropping it.
