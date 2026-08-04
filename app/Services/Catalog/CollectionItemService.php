@@ -89,7 +89,28 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
             ->orderBy('techniques.name', 'ASC')
             ->get();
 
-        $data['techniques'] = $query !== false ? $query->getResultArray() : [];
+        $techniques = $query !== false ? $query->getResultArray() : [];
+        $techniqueIds = array_values(array_filter(array_map(
+            static fn (array $technique): int => (int) ($technique['id'] ?? 0),
+            $techniques,
+        ), static fn (int $id): bool => $id > 0));
+        $translations = $this->translationStore->forResources('technique', $techniqueIds);
+
+        foreach ($techniques as $index => $technique) {
+            $techniqueId = (int) ($technique['id'] ?? 0);
+            $rows = $translations[$techniqueId] ?? [];
+            if ($rows === []) {
+                $this->translationStore->appendLegacyRow('technique', $rows, $technique);
+            }
+
+            $techniques[$index]['localized'] = $this->translationStore->resolve(
+                'technique',
+                $rows,
+                $technique,
+            );
+        }
+
+        $data['techniques'] = $techniques;
         return $data;
     }
 
