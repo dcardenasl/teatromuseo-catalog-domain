@@ -1,9 +1,9 @@
-# TASKS — ci4-domain-starter
+# TASKS — teatromuseo-catalog-domain
 
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md`.
-> Última actualización: 2026-08-02 (CAT-DOM-003 ✅ completado — eliminado el seeder/datos de ejemplo)
+> Última actualización: 2026-08-05 (saneamiento arquitectónico — auditoría completa)
 
 ---
 
@@ -11,9 +11,115 @@
 
 *(vacío)*
 
----## 🟡 Próximo
+---
 
-*(vacío)*
+## 🟡 Próximo
+
+> Saneamiento arquitectónico — auditoría del 2026-08-05.
+> **Contexto, evidencia y rutas exactas:** [`../docs/plan/2026-08-05-saneamiento-arquitectonico.md`](../docs/plan/2026-08-05-saneamiento-arquitectonico.md)
+> Orden y dependencias cross-repo: [`../TASKS.md`](../TASKS.md)
+
+### Fase 1 — Seguridad y correctitud
+
+- [ ] **SEC-02 — Alinear `PermissionFilter` con la versión de event-domain.**
+  `app/Filters/PermissionFilter.php:46` no concede paso a `iam.superadmin-access`; la copia de
+  event (l.46-52) sí, con su justificación en comentario. Hoy un superadmin de plataforma pasa en
+  event y recibe **403** aquí y en cms.
+- [ ] **SEC-05 — `HasPublicSlugs` borra el slug base de la entidad.**
+  `app/Traits/Services/HasPublicSlugs.php:109` y `:127` hacen
+  `$entity->slug = $this->slugStore->resolveSlug($entitySlugs);` **sin respaldo**. La copia de
+  event (l.109-110 y 131-132) tiene `?: trim((string) ($entity->slug ?? ''))`. Resultado: una
+  entidad sin fila en `catalog_public_slugs` pierde el valor de su columna `slug`.
+  Portar el respaldo de event y añadir test unitario del caso "entidad sin slug público registrado".
+
+### Fase 2 — Configuración y CI
+
+- [ ] **CFG-01 — Puertos incorrectos.** `.env.example` declara `app.baseURL` en **8190**, que es el
+  puerto de **cms-domain** — esta app corre en **8191**. `phpunit.xml` está en 8080.
+  `docker-compose.yml:12` bindea `8080:80` y usa los nombres de contenedor `ci4-api-app`/`ci4-api-db`/
+  `ci4-api-phpmyadmin`, **idénticos a los de `teatromuseo-api`** → los dos stacks no pueden convivir.
+- [ ] **CFG-02 — 27 variables leídas y no documentadas**, entre ellas `HUB_INTERNAL_SECRET` /
+  `hub.internalSecret`, `hub.adminToken`, `WEB_API_KEY`, `HUB_URL`/`HUB_API_KEY`/`HUB_APP_CODE`,
+  `QUEUE_REDIS_*` y `CATALOG_LEGACY_FALLBACK_LOCALE`.
+- [ ] **CFG-03 — El gate de swagger es inerte.** `public/swagger.json` está en `.gitignore` y
+  `swagger-validate` hace `git diff --exit-code` sobre él: nunca puede fallar. Dejar de ignorarlo y
+  commitear el generado.
+- [ ] **CFG-04 — Alinear las rutas analizadas por PHPStan.** El baseline está en 0 (bien), pero
+  `app/DTO`, `app/Repositories` y `app/Commands` **no se analizan**, a diferencia del hub.
+- [ ] **CFG-07 — Falta el `apt-get upgrade -y` de parcheo de CVE** en el `Dockerfile`, que api, web,
+  cms y totem sí tienen con la misma plantilla. Corregir también el `LABEL description` copiado
+  (*"Production-ready CI4 API with JWT authentication"* — esta app no emite JWT).
+- [ ] **CFG-08 — Falta `pre-push`** (lo tienen api, admin, web y cms). Matriz de CI en 8.2–8.3
+  mientras se declara `"php": "^8.2"` (api/admin/web/cms prueban hasta 8.5).
+
+### Fase 3 — Extracción a `ci4-api-core`
+
+- [ ] **CORE-01 — Extraer el stack de localización.** ~830 líneas forkeadas con event-domain:
+  `Libraries/Localization/RequestLocaleResolver.php` (49 l) y `SlugGenerator.php` (86 l) son
+  **byte-idénticos**; `LocalizedTranslationStore.php` (384 l) y `PublicSlugStore.php` (264 l)
+  difieren en 3 líneas (import, type-hint, una palabra de doc); los modelos de traducción y slug
+  difieren en 2 (nombre de clase y `$table`).
+  **Antes de extraer, reconciliar las dos divergencias funcionales:** `SEC-05` (respaldo de slug —
+  gana event) y `HasLocalizedTranslations.php:69`, que aquí inyecta `$data['id'] = $id;` en
+  `beforeUpdate()` mientras event no. Decidir cuál es correcta.
+  Lo único genuinamente específico es `TranslationFieldCatalog::FIELDS` y `Config/Localization.php`.
+- [ ] **CORE-01b — Normalizar los nombres de campo de `TranslationFieldCatalog.php:20`**, que mezcla
+  idiomas en una misma lista: `['name','summary','contenido','curiosidad','physical_description','ubicacion']`.
+- [ ] **CORE-02 — Reconciliar filtros y boilerplate** (`PermissionFilter`, `DomainAuthFilter`,
+  `ThrottleFilter`, `WebAppKeyRequiredFilter`, `HubSignatureFilter`, `HealthController`,
+  `HasCrudActions`, `AuditRepository`, modelos de infra) y consumirlos desde el paquete.
+- [ ] **CORE-03 — `app/Config/Api.php` es una copia verbatim de 148 líneas** de la que publica
+  `ci4-api-core`, byte-idéntica a las de cms, event y bff, arrastrando toda la configuración JWT
+  (`$jwtSecretKey`, l.20 y l.105) **en una app que no puede firmar ni verificar un JWT**.
+  Extender la base del paquete como ya hace el hub.
+- [ ] **CORE-06 — Convención de permisos.** Hoy `catalog.<camelCaseSingular>.<crud>`
+  (`catalog.collectionItem.create`), incompatible con cms y event. ⚠️ Ventana de mantenimiento.
+
+### Fase 4 — Coherencia de capas
+
+- [ ] **LAYER-01 — `Controllers/Api/V1/Catalog/PublicCollectionItemController.php` rompe cuatro
+  reglas a la vez:** (1) **muta el superglobal de la petición** para inyectar filtros (l.28-34,
+  `$request->setGlobal('get', ...)`); (2) **llama al cliente del hub desde el controlador**
+  (l.69, `Services::hubClient()`); (3) lleva un `resolveMediaFields()` privado de ~55 líneas que
+  **difiere de la copia de event solo por el nombre de la variable**; (4) `show()` recibe
+  `(array $dto, ...)` con `$dto` sin usar — la capa DTO se salta por completo (l.52).
+  Refactor: filtrado al RequestDTO, `resolveMediaFields()` a un servicio compartido (candidato a
+  `ci4-api-core`), y usar el DTO en `show()`.
+- [ ] **LAYER-03 — `Services/Catalog/CollectionItemService.php:83-84`** accede al builder crudo
+  (tabla `collection_item_technique`, sin modelo). Igual `Services/Catalog/FileUsageService.php:41`.
+- [ ] **LAYER-07 — Dos controladores públicos sin ninguna referencia en `tests/`:**
+  `PublicTechniqueController` y `PublicCategoryController` (ambos gateados con `webappkey`).
+  Sin tests también `Catalog/FileUsageService`.
+
+### Fase 5 — Semillas
+
+- [ ] **MIG-02 — Las tablas de localización no tienen claves foráneas** hacia sus padres
+  (`catalog_translations`, `catalog_public_slugs`).
+- [ ] **MIG-03 — Cero seeders.** Esta app no tiene ningún camino de bootstrap, a diferencia de api
+  y cms. Decidir si necesita uno (mínimo: categorías y técnicas base).
+
+### Fase 6 — Limpieza y docs
+
+- [ ] **DEAD-01 — Eliminar el módulo `Example` completo.** Doce archivos vivos más documentación
+  publicada: `Config/Routes/v1/example.php`, `Config/ExampleDomainServices.php` (cableado en
+  `Services.php:10,21`), `Controllers/Api/V1/Example/ItemController.php`,
+  `Services/Example/ItemService.php`, `Interfaces/Example/ItemServiceInterface.php`,
+  `Models/ItemModel.php`, 3 RequestDTO + 1 ResponseDTO, `Documentation/Example/ItemEndpoints.php`,
+  y 2 tests.
+  **No puede funcionar por tres razones independientes:** (1) `ItemModel.php:17` declara
+  `$table = 'items'` y **ninguna migración crea esa tabla**; (2) `example.php:10` exige
+  `'permission:items.read'`, código ausente de `Config/DomainPermissions.php` (le falta el prefijo
+  `catalog.`) → **403 permanente**; (3) TODO obsoleto en el propio archivo de rutas
+  (*"will be split in v1.8.3"*). Y aun así **`/api/v1/example/items` está publicado en
+  `public/swagger.json`** — endpoints fantasma en el contrato público.
+  ⚠️ **Desenredar primero:** `ItemModel` está referenciado desde código real
+  (`Config/CatalogDomainServices.php`, `Models/CollectionItemModel.php`,
+  `Services/Catalog/CollectionItemService.php`, `Commands/ImportExcel.php`).
+  Se elimina de paso `tests/Feature/Controllers/Example/ItemControllerTest.php`, que pasa en vacío
+  (afirma un 401 y su docblock cita el filtro `jwtauth`, que no existe en esta app).
+  Regenerar el swagger al terminar.
+- [ ] **DOC-01 — Deriva documental:** 4 menciones a `ci4-website-builder*` y 5 a `ci4-*-starter`
+  en `CLAUDE.md`.
 
 ---
 
