@@ -24,18 +24,15 @@ class PublicCollectionItemController extends ApiController
 
     public function index(): ResponseInterface
     {
-        // Force is_active to 1
-        $request = service('request');
-        $filter = $request->getGet('filter') ?? [];
-        if (!is_array($filter)) {
-            $filter = [];
-        }
-        $filter['is_active'] = '1';
-        $request->setGlobal('get', array_merge($request->getGet(), ['filter' => $filter]));
-
         return $this->handleRequest(
             function (CollectionItemIndexRequestDTO $dto, SecurityContext $context): mixed {
-                $result = $this->collectionItemService->index($dto, $context)->toArray();
+                $publicDto = Services::requestDtoFactory()->make(
+                    CollectionItemIndexRequestDTO::class,
+                    array_merge($dto->toArray(), [
+                        'filter' => array_merge($dto->filter, ['is_active' => '1']),
+                    ])
+                );
+                $result = $this->collectionItemService->index($publicDto, $context)->toArray();
                 foreach ($result['data'] as $key => $item) {
                     $itemArray = $item instanceof DataTransferObjectInterface ? $item->toArray() : (array) $item;
                     $result['data'][$key] = $this->resolveMediaFields($itemArray);
@@ -49,7 +46,7 @@ class PublicCollectionItemController extends ApiController
     public function show(string $idOrCode): ResponseInterface
     {
         return $this->handleRequest(
-            function (array $dto, SecurityContext $context) use ($idOrCode): mixed {
+            function (mixed $_, SecurityContext $context) use ($idOrCode): mixed {
                 $data = $this->collectionItemService->getPublicActive($idOrCode);
                 return $this->resolveMediaFields($data);
             }
