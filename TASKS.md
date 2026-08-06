@@ -21,23 +21,9 @@
 
 ### Fase 1 — Seguridad y correctitud
 
-- [ ] **SEC-02 — Alinear `PermissionFilter` con la versión de event-domain.**
-  `app/Filters/PermissionFilter.php:46` no concede paso a `iam.superadmin-access`; la copia de
-  event (l.46-52) sí, con su justificación en comentario. Hoy un superadmin de plataforma pasa en
-  event y recibe **403** aquí y en cms.
-- [ ] **SEC-05 — `HasPublicSlugs` borra el slug base de la entidad.**
-  `app/Traits/Services/HasPublicSlugs.php:109` y `:127` hacen
-  `$entity->slug = $this->slugStore->resolveSlug($entitySlugs);` **sin respaldo**. La copia de
-  event (l.109-110 y 131-132) tiene `?: trim((string) ($entity->slug ?? ''))`. Resultado: una
-  entidad sin fila en `catalog_public_slugs` pierde el valor de su columna `slug`.
-  Portar el respaldo de event y añadir test unitario del caso "entidad sin slug público registrado".
 
 ### Fase 2 — Configuración y CI
 
-- [ ] **CFG-01 — Puertos incorrectos.** `.env.example` declara `app.baseURL` en **8190**, que es el
-  puerto de **cms-domain** — esta app corre en **8191**. `phpunit.xml` está en 8080.
-  `docker-compose.yml:12` bindea `8080:80` y usa los nombres de contenedor `ci4-api-app`/`ci4-api-db`/
-  `ci4-api-phpmyadmin`, **idénticos a los de `teatromuseo-api`** → los dos stacks no pueden convivir.
 - [ ] **CFG-02 — 27 variables leídas y no documentadas**, entre ellas `HUB_INTERNAL_SECRET` /
   `hub.internalSecret`, `hub.adminToken`, `WEB_API_KEY`, `HUB_URL`/`HUB_API_KEY`/`HUB_APP_CODE`,
   `QUEUE_REDIS_*` y `CATALOG_LEGACY_FALLBACK_LOCALE`.
@@ -54,26 +40,29 @@
 
 ### Fase 3 — Extracción a `ci4-api-core`
 
-- [ ] **CORE-01 — Extraer el stack de localización.** ~830 líneas forkeadas con event-domain:
-  `Libraries/Localization/RequestLocaleResolver.php` (49 l) y `SlugGenerator.php` (86 l) son
-  **byte-idénticos**; `LocalizedTranslationStore.php` (384 l) y `PublicSlugStore.php` (264 l)
-  difieren en 3 líneas (import, type-hint, una palabra de doc); los modelos de traducción y slug
-  difieren en 2 (nombre de clase y `$table`).
-  **Antes de extraer, reconciliar las dos divergencias funcionales:** `SEC-05` (respaldo de slug —
-  gana event) y `HasLocalizedTranslations.php:69`, que aquí inyecta `$data['id'] = $id;` en
-  `beforeUpdate()` mientras event no. Decidir cuál es correcta.
-  Lo único genuinamente específico es `TranslationFieldCatalog::FIELDS` y `Config/Localization.php`.
-- [ ] **CORE-01b — Normalizar los nombres de campo de `TranslationFieldCatalog.php:20`**, que mezcla
+- [x] ~~CORE-01~~ — **completado 2026-08-05.** Ver Completadas.
+- [ ] **CORE-01b — Normalizar los nombres de campo de `Config/Localization.php`**, que mezcla
   idiomas en una misma lista: `['name','summary','contenido','curiosidad','physical_description','ubicacion']`.
-- [ ] **CORE-02 — Reconciliar filtros y boilerplate** (`PermissionFilter`, `DomainAuthFilter`,
-  `ThrottleFilter`, `WebAppKeyRequiredFilter`, `HubSignatureFilter`, `HealthController`,
-  `HasCrudActions`, `AuditRepository`, modelos de infra) y consumirlos desde el paquete.
-- [ ] **CORE-03 — `app/Config/Api.php` es una copia verbatim de 148 líneas** de la que publica
-  `ci4-api-core`, byte-idéntica a las de cms, event y bff, arrastrando toda la configuración JWT
-  (`$jwtSecretKey`, l.20 y l.105) **en una app que no puede firmar ni verificar un JWT**.
-  Extender la base del paquete como ya hace el hub.
+  Son columnas reales de `collection_items` consumidas por admin/web/tótem — renombrarlas exige
+  migración de datos cruzada, no es una edición de configuración. Sigue sin tocar.
+- [x] ~~CORE-02~~ — **completado 2026-08-06.** `PermissionFilter`, `HubSignatureFilter` y
+  `WebAppKeyRequiredFilter` extienden ahora las bases del paquete (`ci4-api-core` v1.3.0).
+  `DomainAuthFilter`/`ThrottleFilter` ya extendían `AbstractIntrospectionFilter`/
+  `AbstractThrottleFilter` de antes — no necesitaron cambio. `HasCrudActions` resultó ser código
+  muerto (ningún controlador lo usaba) — eliminado, no migrado. `HealthController` y
+  `AuditRepository` quedan **explícitamente fuera de alcance** del paquete (decisión del propio
+  mantenedor en `ci4-platform/ci4-api-core/TASKS.md`). Los modelos de infra (`MetricModel`,
+  `RequestLogModel`, `AuditLogModel`) y el drift de esquema en `jobs`/`request_logs`/`audit_logs`/
+  `idempotency_keys` **siguen sin reconciliar** — `core:install` no ayuda aquí porque solo escribe
+  una migración cuando no existe ya una clase con ese nombre, y ya existe. Ver Completadas.
+- [x] ~~CORE-03~~ — **completado 2026-08-06.** Ver Completadas.
 - [ ] **CORE-06 — Convención de permisos.** Hoy `catalog.<camelCaseSingular>.<crud>`
-  (`catalog.collectionItem.create`), incompatible con cms y event. ⚠️ Ventana de mantenimiento.
+  (`catalog.collectionItem.create`), incompatible con cms y event.
+  **Confirmado fuera de alcance de `ci4-api-core`** — es config local más una migración de datos
+  en el hub, no código de paquete. ⚠️ **`domain:sync-permissions` es insert-if-missing, no
+  upsert**: renombrar sin migración SQL manual deja huérfanas las filas viejas de `permissions` y
+  sus bindings en `role_permissions`. Ventana de mantenimiento — **no tocar sin confirmación
+  explícita.**
 
 ### Fase 4 — Coherencia de capas
 
@@ -124,6 +113,64 @@
 ---
 
 ## ✅ Completadas
+
+### CORE-02 — Filtros a las bases del paquete v1.3.0 (2026-08-06, segunda pasada)
+
+- **SEC-02 finalmente unificado en las tres apps.** `PermissionFilter` extiende
+  `AbstractPermissionFilter` (`ci4-api-core` v1.3.0), con `superAdminBypassCode()` devolviendo
+  `'iam.superadmin-access'` — antes solo event tenía este bypass; ahora cms, catalog y event se
+  comportan igual. Como `app/Language/{es,en}/Auth.php` no define
+  `authRequired`/`insufficientPermissions` (solo `rateLimitExceeded`), se sobrescribieron
+  `unauthenticatedMessage()`/`forbiddenMessage()` para seguir leyendo `Api.authRequired`/
+  `Api.insufficientPermissions` en español, en vez de caer silenciosamente al `Auth.php` en
+  inglés del paquete. Nuevo test `tests/Unit/Filters/PermissionFilterTest.php` (6 casos).
+- `HubSignatureFilter` y `WebAppKeyRequiredFilter` ahora extienden
+  `AbstractHubSignatureFilter`/`AbstractWebAppKeyRequiredFilter` — mismo HMAC y mismo fail-closed
+  de antes, sin la copia manual. Nuevo test `WebAppKeyRequiredFilterTest.php` (4 casos, no existía
+  antes en esta app).
+- **`app/Traits/Controllers/HasCrudActions.php` resultó ser código muerto, no boilerplate en
+  uso.** Byte-idéntico en api/cms/catalog/event, pero ningún controlador real lo consumía — los
+  controladores escritos a mano necesitan `$context->hasPermission(...)` por acción, algo que ni
+  la versión local ni la del paquete soportan. Se eliminó en vez de migrarse.
+- **Fuera de alcance, confirmado por el propio paquete:** `HealthController` genérico y
+  `AuditRepository` concreto. **Sigue pendiente:** el drift de esquema en las 4 migraciones de
+  infra (`jobs`/`request_logs`/`audit_logs`/`idempotency_keys`) y los modelos `MetricModel`/
+  `RequestLogModel`/`AuditLogModel` — sin base compartida en el paquete, reconciliación manual.
+
+**Verificación:** 218 tests / 534 assertions ✅, PHPStan sin errores.
+
+### CORE-01 + CORE-03 — Localización y Config\Api al paquete (2026-08-06)
+
+- **CORE-01:** eliminado el fork local de localización (`Libraries/Localization/*` y
+  `Traits/Services/Has*`) — **1.129 líneas menos**. Ahora se consume el runtime de
+  `ci4-api-core` v1.2.0. `TranslationFieldCatalog` quedó absorbido por `Config\Localization`,
+  que expone `fields()`/`hasField()` con la misma semántica y la misma excepción; el registro de
+  campos traducibles vive ahí. `CatalogTranslationModel` y `CatalogPublicSlugModel` extienden ahora
+  `BaseTranslationModel`/`BasePublicSlugModel` (solo aportan el nombre de tabla, más las reglas de
+  validación del slug que la base no trae). Nuevas factorías: `requestLocaleResolver()` compartida
+  entre ambos stores.
+  El respaldo de slug de `SEC-05` ya venía corregido en el paquete, así que el arreglo local quedó
+  redundante y se eliminó con el resto.
+- **CORE-03:** `app/Config/Api.php` pasa de 148 líneas copiadas a extender la base del paquete.
+  Se elimina `accessPolicyBypassRoutes` apuntando a `auth/resend-verification`, ruta inexistente aquí.
+- **Test de arquitectura robustecido:** `AuditableModelConventionsTest` comprobaba la clase padre por
+  texto del código, así que no veía a través de las bases intermedias del paquete. Ahora resuelve la
+  clase y recorre la cadena de herencia.
+- **CORE-01b pendiente:** `Config\Localization` conserva los nombres mixtos `contenido`,
+  `curiosidad` y `ubicacion` junto a sus hermanos en inglés. Son columnas reales de
+  `collection_items` que consumen admin, web y tótem — renombrarlas es un cambio cruzado con
+  migración de datos, no una edición de configuración.
+
+**Verificación:** `composer quality` ✅ — 214 tests / 527 assertions, PHPStan sin errores.
+
+- **CFG-01 — Puerto canónico y aislamiento de Compose (2026-08-05):** `.env.example`,
+  `.env.docker.example`, PHPUnit e `init.sh` usan catálogo `8191`; Compose usa `8191`, `8192` y
+  `3309`, además de nombres, red y volumen propios para no colisionar con el hub. Composer
+  quality ✅ (214 tests / 527 assertions).
+
+- **SEC-02 + SEC-05 — Seguridad y fallback de slugs (2026-08-05):** `PermissionFilter` ahora
+  reconoce `iam.superadmin-access`, y `HasPublicSlugs` conserva el slug base cuando no existe fila
+  localizada, en rutas batch y single-entity. Se añadieron 9 regresiones; `composer quality` ✅.
 
 ### CAT-DOM-003 — Eliminar el seeder de ejemplo y sus datos (2026-08-02)
 - **Qué**: David pidió que catalog-domain solo muestre lo que efectivamente viene de la BD
