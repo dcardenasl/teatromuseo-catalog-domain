@@ -30,6 +30,10 @@ class AuditableModelConventionsTest extends CIUnitTestCase
         'AuditLogModel',
         'MetricModel',
         'RequestLogModel',
+        // Join/pivot table for collection_items <-> techniques: composite
+        // primary key, no timestamps beyond created_at, nothing meaningful
+        // to audit-diff on a pure association row (see LAYER-03).
+        'CollectionItemTechniqueModel',
     ];
 
     public function testAuditableModelsExtendSharedBaseAuditableModel(): void

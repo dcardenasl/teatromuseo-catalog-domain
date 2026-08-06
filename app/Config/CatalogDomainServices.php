@@ -131,6 +131,6 @@ trait CatalogDomainServices
             return static::getSharedInstance('fileUsageService');
         }
 
-        return new \App\Services\Catalog\FileUsageService(\Config\Database::connect());
+        return new \App\Services\Catalog\FileUsageService(model(\App\Models\CollectionItemModel::class));
     }
 }

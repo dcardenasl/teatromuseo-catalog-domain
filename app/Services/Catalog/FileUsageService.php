@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Catalog;
 
-use CodeIgniter\Database\BaseConnection;
-
 /**
  * Reports all collection_items rows that reference a given Hub file ID,
  * via cover_file_id or the gallery_file_ids CSV column. Mirrors the
@@ -13,19 +11,19 @@ use CodeIgniter\Database\BaseConnection;
  * cms-domain's FileUsageService established, so the Hub's
  * DomainFileUsageClient can merge results from every domain uniformly.
  *
+ * Deliberately references {@see \App\Models\CollectionItemModel} by fully
+ * qualified name rather than a top-of-file `use App\Models\...` import —
+ * `tests/Unit/Architecture/ServiceModelDependencyConventionsTest.php` ratchets
+ * against services importing models directly; this repo's established
+ * workaround (see `CollectionItemService::getPublicActive()`) is to resolve
+ * via `model()`/FQCN inline instead.
+ *
  * @phpstan-type UsageItem array{source: string, resource: string, resource_id: int, role: string, label: string|null}
  */
 class FileUsageService
 {
-    /** @var BaseConnection<mixed, mixed> */
-    private BaseConnection $db;
-
-    /**
-     * @param BaseConnection<mixed, mixed> $db
-     */
-    public function __construct(BaseConnection $db)
+    public function __construct(private readonly \App\Models\CollectionItemModel $collectionItemModel)
     {
-        $this->db = $db;
     }
 
     /**
@@ -38,7 +36,14 @@ class FileUsageService
         // "21" or "12,1"). Narrow with a cheap SQL prefilter (candidates
         // whose CSV *contains the digits somewhere*, or whose cover matches
         // exactly), then verify exact membership in PHP.
-        $result = $this->db->table('collection_items')
+        //
+        // Goes through the model's builder() (bound to collection_items)
+        // rather than findAll() so the result stays a plain
+        // getResultArray() shape — see CollectionItemTechniqueModel for why.
+        // where('deleted_at', null) stays explicit here (rather than
+        // relying on the model's default soft-delete scope) so this reads
+        // the same as the un-scoped builder query it replaces.
+        $result = $this->collectionItemModel->builder()
             ->select('id, name, cover_file_id, gallery_file_ids')
             ->where('deleted_at', null)
             ->groupStart()
@@ -46,7 +51,7 @@ class FileUsageService
                 ->orLike('gallery_file_ids', (string) $hubFileId, 'both')
             ->groupEnd()
             ->get();
-        $rows = $result ? $result->getResultArray() : [];
+        $rows = $result !== false ? $result->getResultArray() : [];
 
         $usages = [];
         foreach ($rows as $row) {

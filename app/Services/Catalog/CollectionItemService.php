@@ -80,16 +80,8 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
         $data = $this->mapToResponse($enriched[0] ?? $entity)->toArray();
 
         // Fetch associated techniques
-        $db = \Config\Database::connect();
-        $query = $db->table('collection_item_technique')
-            ->select('techniques.*')
-            ->join('techniques', 'techniques.id = collection_item_technique.technique_id')
-            ->where('collection_item_technique.collection_item_id', $entity->id)
-            ->orderBy('techniques.sort_order', 'ASC')
-            ->orderBy('techniques.name', 'ASC')
-            ->get();
-
-        $techniques = $query !== false ? $query->getResultArray() : [];
+        $techniques = model(\App\Models\CollectionItemTechniqueModel::class)
+            ->findTechniquesForCollectionItem((int) $entity->id);
         $techniqueIds = array_values(array_filter(array_map(
             static fn (array $technique): int => (int) ($technique['id'] ?? 0),
             $techniques,
