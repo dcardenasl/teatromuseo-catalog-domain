@@ -3,7 +3,7 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md`.
-> Última actualización: 2026-08-05 (saneamiento arquitectónico — auditoría completa)
+> Última actualización: 2026-08-06 (Fase 4 — LAYER-01/03/07)
 
 ---
 
@@ -66,19 +66,7 @@
 
 ### Fase 4 — Coherencia de capas
 
-- [ ] **LAYER-01 — `Controllers/Api/V1/Catalog/PublicCollectionItemController.php` rompe cuatro
-  reglas a la vez:** (1) **muta el superglobal de la petición** para inyectar filtros (l.28-34,
-  `$request->setGlobal('get', ...)`); (2) **llama al cliente del hub desde el controlador**
-  (l.69, `Services::hubClient()`); (3) lleva un `resolveMediaFields()` privado de ~55 líneas que
-  **difiere de la copia de event solo por el nombre de la variable**; (4) `show()` recibe
-  `(array $dto, ...)` con `$dto` sin usar — la capa DTO se salta por completo (l.52).
-  Refactor: filtrado al RequestDTO, `resolveMediaFields()` a un servicio compartido (candidato a
-  `ci4-api-core`), y usar el DTO en `show()`.
-- [ ] **LAYER-03 — `Services/Catalog/CollectionItemService.php:83-84`** accede al builder crudo
-  (tabla `collection_item_technique`, sin modelo). Igual `Services/Catalog/FileUsageService.php:41`.
-- [ ] **LAYER-07 — Dos controladores públicos sin ninguna referencia en `tests/`:**
-  `PublicTechniqueController` y `PublicCategoryController` (ambos gateados con `webappkey`).
-  Sin tests también `Catalog/FileUsageService`.
+
 
 ### Fase 5 — Semillas
 
@@ -113,6 +101,64 @@
 ---
 
 ## ✅ Completadas
+
+### LAYER-01 + LAYER-03 + LAYER-07 — Coherencia de capas, Fase 4 (2026-08-06)
+
+- **LAYER-01 — checkbox corregido, marcado done tras verificación (no re-trabajado).**
+  `Controllers/Api/V1/Catalog/PublicCollectionItemController.php` **ya no muta el superglobal**
+  de la petición (`index()` ahora arma el filtro `is_active` con
+  `Services::requestDtoFactory()->make(CollectionItemIndexRequestDTO::class, array_merge(...))`
+  en vez de `$request->setGlobal('get', ...)`) — el checkbox venía obsoleto de un fix anterior no
+  reflejado en este archivo. **Ojo para quien retome esto:** al releer el archivo completo, los
+  otros tres puntos originales de LAYER-01 (llamada a `Services::hubClient()` desde el
+  controlador, `resolveMediaFields()` privado de ~55 líneas sin extraer a un servicio compartido,
+  y `show()` sin DTO tipado — usa `mixed $_` con el tercer argumento de `handleRequest()`
+  omitido) **siguen presentes en el código actual**. Quedaron fuera de alcance de esta pasada
+  (instrucción explícita de no re-trabajar LAYER-01, solo verificar el punto del `$_GET` y
+  corregir el checkbox) — si esos tres puntos siguen importando, hace falta reabrir una tarea
+  específica para ellos, no asumir que están cerrados.
+- **LAYER-03:** nuevo `App\Models\CollectionItemTechniqueModel` para la tabla pivote
+  `collection_item_technique` (PK compuesta `collection_item_id`+`technique_id`, sin soft
+  delete, sin `updated_at` — extiende `CodeIgniter\Model` plano, no `BaseAuditableModel`;
+  añadido a `AuditableModelConventionsTest::NON_AUDITABLE` con justificación). Su método
+  `findTechniquesForCollectionItem()` reemplaza el `Config\Database::connect()->table(...)`
+  crudo de `CollectionItemService.php:83-84`. `FileUsageService.php:41` migrado igual: el
+  constructor ahora recibe `CollectionItemModel` (vía DI, `CatalogDomainServices::fileUsageService()`
+  actualizado) y consulta a través de `$this->collectionItemModel->builder()` en vez de una
+  conexión cruda — mismo resultado (`getResultArray()`), ahora respaldado por un modelo. Ambas
+  consultas siguen pasando por `->builder()`/`getResultArray()` en vez de `->asArray()->findAll()`
+  porque PHPStan no puede acotar el tipo genérico de `findAll()` sin un `@var` de override, que
+  este repo prohíbe explícitamente. Los dos servicios referencian los modelos por FQCN inline
+  (`model(\App\Models\X::class)` / `\App\Models\X` en el tipo del constructor) en vez de un `use
+  App\Models\...` — sigue el patrón ya establecido en `CollectionItemService::getPublicActive()`
+  para no romper el ratchet vacío de `ServiceModelDependencyConventionsTest`.
+  ⚠️ `app/Commands/ImportExcel.php:156-158` hace el mismo `db->table('collection_item_technique')`
+  crudo (sync de técnicas por ítem) — **fuera de alcance explícito de LAYER-03** (la tarea solo
+  nombraba `CollectionItemService.php` y `FileUsageService.php`); candidato natural para
+  reutilizar `CollectionItemTechniqueModel` en una pasada futura.
+- **LAYER-07:** tests nuevos para los dos controladores públicos sin cobertura —
+  `tests/Feature/Controllers/Catalog/PublicCategoryControllerTest.php` (4 tests: missing/invalid
+  `X-App-Key` → 401, índice devuelve las categorías creadas, `per_page` fuera de rango → 422) y
+  `tests/Feature/Controllers/Catalog/PublicTechniqueControllerTest.php` (9 tests: los mismos
+  casos de `index` más `show` por slug/id/404). Y para `Catalog/FileUsageService`, que no tenía
+  ninguno: `tests/Integration/Services/FileUsageServiceTest.php` (6 tests contra DB real —
+  portada, galería, ambos a la vez, sin uso, soft-deleted excluido, y el caso específico que el
+  propio comentario de la clase advierte: falso positivo por substring en el CSV, ej. file id 1
+  no debe matchear portada 21 ni galería "21,12"). **Hallazgo de esta pasada, documentado en los
+  tests:** las respuestas de `show()` en Technique/Category llegan envueltas normalmente en
+  `{status, data: {...}}`, a diferencia de `PublicCollectionItemController::show()`, cuyo cuerpo
+  aparece *sin envolver* solo porque `collection_items` tiene una columna de dominio llamada
+  `status` (draft/published) que choca por nombre con la clave `status` del sobre de
+  `ApiResponse::handleArray()` — comportamiento accidental del paquete, no un contrato a copiar
+  en tests nuevos.
+
+**Verificación:** `composer quality` ✅ completo (cs-check, PHPStan L8 sin errores, swagger
+regenerado sin cambios de superficie pública, arch-drift, i18n-check, docs-i18n-check, 233 tests
+/ 560 assertions, 1 skip preexistente no relacionado — arranca desde 215/531 antes de esta
+pasada). Nota de aislamiento: correr `PublicCategoryControllerTest`/`PublicTechniqueControllerTest`
+en solitario (filtro de PHPUnit) dispara un `TypeError` preexistente en `Config\Services::request()`
+— el mismo problema que ya afecta a `PublicCollectionItemControllerTest` en solitario, ajeno a
+esta tarea; corriendo la suite completa (lo que hace `composer quality`) no aparece.
 
 ### CORE-02 — Filtros a las bases del paquete v1.3.0 (2026-08-06, segunda pasada)
 
