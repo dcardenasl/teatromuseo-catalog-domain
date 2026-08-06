@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Libraries\Localization\SlugGenerator;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
+use dcardenasl\Ci4ApiCore\Localization\SlugGenerator;
 
 class ImportExcel extends BaseCommand
 {

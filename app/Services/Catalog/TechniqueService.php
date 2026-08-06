@@ -6,11 +6,11 @@ namespace App\Services\Catalog;
 
 use App\Entities\TechniqueEntity;
 use App\Interfaces\Catalog\TechniqueServiceInterface;
-use App\Libraries\Localization\LocalizedTranslationStore;
-use App\Traits\Services\HasLocalizedTranslations;
+use dcardenasl\Ci4ApiCore\Localization\LocalizedTranslationStore;
 use dcardenasl\Ci4ApiCore\Mappers\ResponseMapperInterface;
 use dcardenasl\Ci4ApiCore\Repositories\RepositoryInterface;
 use dcardenasl\Ci4ApiCore\Services\BaseCrudService;
+use dcardenasl\Ci4ApiCore\Services\HasLocalizedTranslations;
 
 /**
  * @extends BaseCrudService<TechniqueEntity>
