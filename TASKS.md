@@ -114,6 +114,32 @@
   (instrucción explícita de no re-trabajar LAYER-01, solo verificar el punto del `$_GET` y
   corregir el checkbox) — si esos tres puntos siguen importando, hace falta reabrir una tarea
   específica para ellos, no asumir que están cerrados.
+- **LAYER-01 — cerrado del todo (2026-08-07).** Los tres puntos que quedaron pendientes arriba
+  ya están resueltos:
+  1. `resolveMediaFields()` (llamada directa a `Services::hubClient()` + ~55 líneas duplicadas
+     con event-domain) se extrajo a `App\Services\Catalog\CollectionItemMediaResolutionService`
+     (constructor-injected `HubClient`, sin interfaz — igual que `FileUsageService`, no hay
+     repositorio/modelo detrás, solo una llamada HTTP), registrado en
+     `CatalogDomainServices::collectionItemMediaResolutionService()` mirroring
+     `fileUsageService()`. El controlador ya no importa `Services::hubClient()`; resuelve el
+     nuevo servicio en `resolveDefaultService()` junto al `collectionItemService`.
+  2. `show()` cambió `function (mixed $_, SecurityContext $context)` (con el tercer argumento de
+     `handleRequest()` omitido) a `function (array $dto, SecurityContext $context)` — la misma
+     firma que ya usan `CollectionItemController::show()`, `TechniqueController::show()`,
+     `CategoryController::show()` y `PublicTechniqueController::show()` en esta misma app (no
+     hay body que validar en un `show()` por id/slug de ruta, así que no aplica un
+     `BaseRequestDTO`; `array $dto` es la convención establecida para ese caso, en vez de
+     `mixed`).
+  3. La duplicación cross-repo (punto 2 original de LAYER-01) queda resuelta al nivel de "mismo
+     patrón local en ambas apps": `event-domain` ya había extraído la lógica equivalente a
+     `App\Services\Events\EventMediaResolutionService` (ver su TASKS.md); esta clase mirrors esa
+     forma exacta (mismo constructor, mismo método público, mismo estilo de doc) adaptada al
+     naming de catalog-domain. No se tocó `ci4-api-core` ni se compartió código entre repos —
+     fuera de alcance.
+  4 tests unitarios nuevos en `tests/Unit/Services/Catalog/CollectionItemMediaResolutionServiceTest.php`
+  (sin file ids, cover+gallery mixtos, metadata faltante del Hub, CSV con ids inválidos/ruidosos —
+  mismos 4 casos que la contraparte de event-domain). `composer quality` verde: 238 tests / 573
+  aserciones / 1 skip preexistente (arriba de la línea base de 234/561 disclosed).
 - **LAYER-03:** nuevo `App\Models\CollectionItemTechniqueModel` para la tabla pivote
   `collection_item_technique` (PK compuesta `collection_item_id`+`technique_id`, sin soft
   delete, sin `updated_at` — extiende `CodeIgniter\Model` plano, no `BaseAuditableModel`;

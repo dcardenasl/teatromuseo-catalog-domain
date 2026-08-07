@@ -133,4 +133,13 @@ trait CatalogDomainServices
 
         return new \App\Services\Catalog\FileUsageService(model(\App\Models\CollectionItemModel::class));
     }
+
+    public static function collectionItemMediaResolutionService(bool $getShared = true): \App\Services\Catalog\CollectionItemMediaResolutionService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('collectionItemMediaResolutionService');
+        }
+
+        return new \App\Services\Catalog\CollectionItemMediaResolutionService(static::hubClient());
+    }
 }
