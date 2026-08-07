@@ -27,9 +27,7 @@
 - [ ] **CFG-02 — 27 variables leídas y no documentadas**, entre ellas `HUB_INTERNAL_SECRET` /
   `hub.internalSecret`, `hub.adminToken`, `WEB_API_KEY`, `HUB_URL`/`HUB_API_KEY`/`HUB_APP_CODE`,
   `QUEUE_REDIS_*` y `CATALOG_LEGACY_FALLBACK_LOCALE`.
-- [ ] **CFG-03 — El gate de swagger es inerte.** `public/swagger.json` está en `.gitignore` y
-  `swagger-validate` hace `git diff --exit-code` sobre él: nunca puede fallar. Dejar de ignorarlo y
-  commitear el generado.
+- [x] ~~CFG-03~~ — **completado 2026-08-06.** Ver Completadas.
 - [ ] **CFG-04 — Alinear las rutas analizadas por PHPStan.** El baseline está en 0 (bien), pero
   `app/DTO`, `app/Repositories` y `app/Commands` **no se analizan**, a diferencia del hub.
 - [ ] **CFG-07 — Falta el `apt-get upgrade -y` de parcheo de CVE** en el `Dockerfile`, que api, web,
@@ -77,30 +75,29 @@
 
 ### Fase 6 — Limpieza y docs
 
-- [ ] **DEAD-01 — Eliminar el módulo `Example` completo.** Doce archivos vivos más documentación
-  publicada: `Config/Routes/v1/example.php`, `Config/ExampleDomainServices.php` (cableado en
-  `Services.php:10,21`), `Controllers/Api/V1/Example/ItemController.php`,
-  `Services/Example/ItemService.php`, `Interfaces/Example/ItemServiceInterface.php`,
-  `Models/ItemModel.php`, 3 RequestDTO + 1 ResponseDTO, `Documentation/Example/ItemEndpoints.php`,
-  y 2 tests.
-  **No puede funcionar por tres razones independientes:** (1) `ItemModel.php:17` declara
-  `$table = 'items'` y **ninguna migración crea esa tabla**; (2) `example.php:10` exige
-  `'permission:items.read'`, código ausente de `Config/DomainPermissions.php` (le falta el prefijo
-  `catalog.`) → **403 permanente**; (3) TODO obsoleto en el propio archivo de rutas
-  (*"will be split in v1.8.3"*). Y aun así **`/api/v1/example/items` está publicado en
-  `public/swagger.json`** — endpoints fantasma en el contrato público.
-  ⚠️ **Desenredar primero:** `ItemModel` está referenciado desde código real
-  (`Config/CatalogDomainServices.php`, `Models/CollectionItemModel.php`,
-  `Services/Catalog/CollectionItemService.php`, `Commands/ImportExcel.php`).
-  Se elimina de paso `tests/Feature/Controllers/Example/ItemControllerTest.php`, que pasa en vacío
-  (afirma un 401 y su docblock cita el filtro `jwtauth`, que no existe en esta app).
-  Regenerar el swagger al terminar.
+- [x] ~~DEAD-01~~ — **completado 2026-08-06.** Ver Completadas.
 - [ ] **DOC-01 — Deriva documental:** 4 menciones a `ci4-website-builder*` y 5 a `ci4-*-starter`
   en `CLAUDE.md`.
 
 ---
 
 ## ✅ Completadas
+
+### DEAD-01 + CFG-03 — checkboxes reconciliados tras auditoría (2026-08-07)
+
+- **DEAD-01 — Módulo `Example` completo, verificado eliminado.** Los 12 archivos vivos
+  (`Config/Routes/v1/example.php`, `Config/ExampleDomainServices.php`,
+  `Controllers/Api/V1/Example/ItemController.php`, `Services/Example/ItemService.php`,
+  `Interfaces/Example/ItemServiceInterface.php`, `Models/ItemModel.php`, 3 RequestDTO + 1
+  ResponseDTO, `Documentation/Example/ItemEndpoints.php`, 2 tests) ya no existen; `Services.php`
+  no referencia `ExampleDomainServices`. Grep de todo el árbol (`app/`, `tests/`,
+  `public/swagger.json`) por "example" solo encuentra anotaciones OpenAPI legítimas
+  (`example:`) y nombres de archivo `.env.example` — cero endpoints fantasma. El checkbox
+  llevaba días desactualizado respecto al código real (commit `9f2bd4c`); solo se corrige aquí
+  la casilla, no se retrabajó nada.
+- **CFG-03 — `public/swagger.json` rastreado en git, confirmado.** `git ls-files
+  public/swagger.json` lo devuelve; se quitó de `.gitignore` en el commit `5a6de41`.
+  `composer swagger-validate` ahora sí puede fallar (regenera y diffea contra el commiteado).
 
 ### LAYER-01 + LAYER-03 + LAYER-07 — Coherencia de capas, Fase 4 (2026-08-06)
 
