@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8c026b02b3c084ffd39639113a36d922",
+    "content-hash": "10723c321cbef52d62d25f18ade3b2be",
     "packages": [
         {
             "name": "codeigniter4/framework",
-            "version": "v4.7.3",
+            "version": "v4.7.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codeigniter4/framework.git",
-                "reference": "ab9bf33caa3ccc25b1a4652234d7d0eb1d1937de"
+                "reference": "67ead895b7491703e5e5bc17436778806192008f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codeigniter4/framework/zipball/ab9bf33caa3ccc25b1a4652234d7d0eb1d1937de",
-                "reference": "ab9bf33caa3ccc25b1a4652234d7d0eb1d1937de",
+                "url": "https://api.github.com/repos/codeigniter4/framework/zipball/67ead895b7491703e5e5bc17436778806192008f",
+                "reference": "67ead895b7491703e5e5bc17436778806192008f",
                 "shasum": ""
             },
             "require": {
@@ -81,21 +81,15 @@
                 "slack": "https://codeigniterchat.slack.com",
                 "source": "https://github.com/codeigniter4/CodeIgniter4"
             },
-            "time": "2026-05-22T11:21:33+00:00"
+            "time": "2026-07-07T09:23:35+00:00"
         },
         {
             "name": "dcardenasl/ci4-api-core",
-            "version": "v1.3.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/dcardenasl/ci4-api-core.git",
-                "reference": "829678f9a6694cdaf4636449ffb99d7cc83281d7"
-            },
+            "version": "dev-main",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/dcardenasl/ci4-api-core/zipball/829678f9a6694cdaf4636449ffb99d7cc83281d7",
-                "reference": "829678f9a6694cdaf4636449ffb99d7cc83281d7",
-                "shasum": ""
+                "type": "path",
+                "url": "../../ci4-platform/ci4-api-core",
+                "reference": "cb074d517c94469a4e955ffaf234d433d94bf49c"
             },
             "require": {
                 "codeigniter4/framework": "^4.7",
@@ -118,27 +112,61 @@
             },
             "type": "library",
             "extra": {
-                "branch-alias": {
-                    "dev-main": "1.2.x-dev"
-                },
                 "codeigniter4": {
                     "commands": [
                         "dcardenasl\\Ci4ApiCore\\Commands\\CoreCheck",
                         "dcardenasl\\Ci4ApiCore\\Commands\\CoreInstall",
                         "dcardenasl\\Ci4ApiCore\\Commands\\EnvCheck",
+                        "dcardenasl\\Ci4ApiCore\\Commands\\HousekeepingClean",
                         "dcardenasl\\Ci4ApiCore\\Commands\\QueueWork"
                     ]
+                },
+                "branch-alias": {
+                    "dev-main": "1.2.x-dev"
                 }
             },
             "autoload": {
-                "files": [
-                    "src/Helpers/date.php"
-                ],
                 "psr-4": {
                     "dcardenasl\\Ci4ApiCore\\": "src/"
+                },
+                "files": [
+                    "src/Helpers/date.php"
+                ]
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Tests\\": "tests/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "analyse": [
+                    "phpstan analyse --level=8 --memory-limit=1G"
+                ],
+                "analyse:baseline": [
+                    "phpstan analyse --level=8 --memory-limit=1G --generate-baseline=phpstan-baseline.neon"
+                ],
+                "cs-check": [
+                    "vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction"
+                ],
+                "cs-fix": [
+                    "vendor/bin/php-cs-fixer fix --no-interaction"
+                ],
+                "security": [
+                    "composer audit --no-dev --locked"
+                ],
+                "mutate": [
+                    "infection --min-msi=60 --min-covered-msi=70 -j4"
+                ],
+                "quality": [
+                    "@analyse",
+                    "@cs-check",
+                    "@security",
+                    "@test"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -151,10 +179,10 @@
             "description": "DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Powers ci4-api-starter and ci4-domain-starter. Pair with dcardenasl/ci4-api-scaffolding for CRUD generation.",
             "homepage": "https://github.com/dcardenasl/ci4-api-core",
             "keywords": [
-                "Audit",
-                "CI4",
                 "api",
+                "audit",
                 "base-classes",
+                "ci4",
                 "codeigniter",
                 "codeigniter4",
                 "dto",
@@ -170,7 +198,9 @@
                 "issues": "https://github.com/dcardenasl/ci4-api-core/issues",
                 "source": "https://github.com/dcardenasl/ci4-api-core"
             },
-            "time": "2026-08-06T15:28:52+00:00"
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "guzzlehttp/psr7",
@@ -5953,7 +5983,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,

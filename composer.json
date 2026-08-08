@@ -3,6 +3,12 @@
     "description": "CodeIgniter 4 Domain App Starter \u2014 delegates auth to a hub via /auth/introspect.",
     "type": "project",
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../ci4-platform/ci4-api-core"
+        }
+    ],
     "require": {
         "php": "^8.2",
         "codeigniter4/framework": "^4.7",
@@ -96,6 +102,6 @@
             "phpstan/extension-installer": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }
