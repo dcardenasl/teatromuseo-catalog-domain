@@ -153,12 +153,13 @@ class ImportExcel extends BaseCommand
             }
 
             // Sync Pivot Relations
-            $db->table('collection_item_technique')->where('collection_item_id', $itemId)->delete();
+            $pivotModel = model(\App\Models\CollectionItemTechniqueModel::class);
+            $pivotModel->where('collection_item_id', $itemId)->delete();
             foreach ($techniquesAssoc as $techId) {
-                $db->table('collection_item_technique')->insert([
+                $pivotModel->insert([
                     'collection_item_id' => $itemId,
-                    'technique_id' => $techId,
-                    'created_at' => date('Y-m-d H:i:s'),
+                    'technique_id'       => $techId,
+                    'created_at'         => date('Y-m-d H:i:s'),
                 ]);
             }
         }
