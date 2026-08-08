@@ -24,9 +24,7 @@
 
 ### Fase 2 — Configuración y CI
 
-- [ ] **CFG-02 — 27 variables leídas y no documentadas**, entre ellas `HUB_INTERNAL_SECRET` /
-  `hub.internalSecret`, `hub.adminToken`, `WEB_API_KEY`, `HUB_URL`/`HUB_API_KEY`/`HUB_APP_CODE`,
-  `QUEUE_REDIS_*` y `CATALOG_LEGACY_FALLBACK_LOCALE`.
+- [x] ~~CFG-02~~ — **completado (2026-08-07).** Documentadas las variables en `.env.example` (`WEB_API_KEY`, `hub.adminToken`, `LOCALIZATION_LEGACY_FALLBACK_LOCALE`, `QUEUE_REDIS_*`).
 - [x] ~~CFG-03~~ — **completado 2026-08-06.** Ver Completadas.
 - [ ] **CFG-04 — Alinear las rutas analizadas por PHPStan.** El baseline está en 0 (bien), pero
   `app/DTO`, `app/Repositories` y `app/Commands` **no se analizan**, a diferencia del hub.
