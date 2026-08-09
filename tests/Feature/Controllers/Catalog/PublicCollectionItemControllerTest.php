@@ -99,6 +99,19 @@ final class PublicCollectionItemControllerTest extends CIUnitTestCase
         $result->assertStatus(404);
     }
 
+    public function testShowSupportsStatusSparseField(): void
+    {
+        $this->createItem('Pieza Publicada');
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public/catalog/collection-items/pieza-publicada?fields=status');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->response()->getBody(), true);
+        $this->assertSame('published', $body['status'] ?? null);
+        $this->assertArrayNotHasKey('name', $body);
+    }
+
     /**
      * @return array<string, mixed>
      */

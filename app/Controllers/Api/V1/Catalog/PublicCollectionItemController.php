@@ -27,7 +27,7 @@ class PublicCollectionItemController extends ApiController
         'id', 'uuid', 'name', 'slug', 'slugs', 'category_id', 'cover_file_id',
         'cover_url', 'gallery_file_ids', 'localized', 'summary', 'description',
         'content', 'period', 'creator', 'origin', 'techniques', 'materials',
-        'translations', 'created_at', 'updated_at',
+        'translations', 'status', 'created_at', 'updated_at',
     ];
 
     protected CollectionItemServiceInterface $collectionItemService;
