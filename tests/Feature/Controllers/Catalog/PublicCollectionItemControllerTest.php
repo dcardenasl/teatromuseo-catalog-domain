@@ -121,11 +121,22 @@ final class PublicCollectionItemControllerTest extends CIUnitTestCase
 
         $result->assertStatus(200);
         $body = json_decode((string) $result->getJSON(), true);
-        $this->assertTrue($body['ok'] ?? false);
-        $this->assertSame(1, $body['version'] ?? null);
-        $this->assertSame('catalog', $body['source']['domain'] ?? null);
+        $this->assertPublicReadEnvelope($body, 'catalog');
         $this->assertSame('es', $body['meta']['locale'] ?? null);
         $this->assertSame('Pieza PublicRead', $body['data'][0]['name'] ?? null);
+    }
+
+    public function testPublicReadListingFallsBackToTheDefaultLocale(): void
+    {
+        $this->createItem('Pieza fallback');
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items?fields=id,name');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertPublicReadEnvelope($body, 'catalog');
+        $this->assertSame('Pieza fallback', $body['data'][0]['name'] ?? null);
     }
 
     public function testPublicReadListingRejectsMissingAppKey(): void
@@ -186,5 +197,18 @@ final class PublicCollectionItemControllerTest extends CIUnitTestCase
                 'is_active' => 1,
             ])
         )->toArray();
+    }
+
+    /** @param array<string, mixed> $body */
+    private function assertPublicReadEnvelope(array $body, string $domain): void
+    {
+        $this->assertTrue($body['ok'] ?? false);
+        $this->assertSame(1, $body['version'] ?? null);
+        $this->assertArrayHasKey('data', $body);
+        $this->assertIsArray($body['meta'] ?? null);
+        $this->assertSame($domain, $body['source']['domain'] ?? null);
+        $this->assertSame('fresh', $body['source']['state'] ?? null);
+        $this->assertFalse($body['source']['stale'] ?? true);
+        $this->assertIsArray($body['messages'] ?? null);
     }
 }
