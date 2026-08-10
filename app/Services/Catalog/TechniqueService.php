@@ -6,6 +6,7 @@ namespace App\Services\Catalog;
 
 use App\Entities\TechniqueEntity;
 use App\Interfaces\Catalog\TechniqueServiceInterface;
+use App\Interfaces\PublicCacheInvalidationNotifierInterface;
 use dcardenasl\Ci4ApiCore\Localization\LocalizedTranslationStore;
 use dcardenasl\Ci4ApiCore\Mappers\ResponseMapperInterface;
 use dcardenasl\Ci4ApiCore\Repositories\RepositoryInterface;
@@ -26,10 +27,29 @@ class TechniqueService extends BaseCrudService implements TechniqueServiceInterf
         RepositoryInterface $techniqueRepository,
         ResponseMapperInterface $responseMapper,
         LocalizedTranslationStore $translationStore,
+        private readonly PublicCacheInvalidationNotifierInterface $cacheInvalidator,
     ) {
         parent::__construct($techniqueRepository, $responseMapper);
         $this->translationStore = $translationStore;
         $this->localizedResourceType = 'technique';
+    }
+
+    protected function afterStore(object $entity, ?\dcardenasl\Ci4ApiCore\Dto\SecurityContext $context): void
+    {
+        parent::afterStore($entity, $context);
+        $this->cacheInvalidator->invalidate(['techniques', 'collection_items']);
+    }
+
+    protected function afterUpdate(object $entity, ?\dcardenasl\Ci4ApiCore\Dto\SecurityContext $context): void
+    {
+        parent::afterUpdate($entity, $context);
+        $this->cacheInvalidator->invalidate(['techniques', 'collection_items']);
+    }
+
+    protected function afterDelete(object $entity, ?\dcardenasl\Ci4ApiCore\Dto\SecurityContext $context): void
+    {
+        parent::afterDelete($entity, $context);
+        $this->cacheInvalidator->invalidate(['techniques', 'collection_items']);
     }
 
     /**

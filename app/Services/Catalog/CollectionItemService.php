@@ -6,6 +6,7 @@ namespace App\Services\Catalog;
 
 use App\Entities\CollectionItemEntity;
 use App\Interfaces\Catalog\CollectionItemServiceInterface;
+use App\Interfaces\PublicCacheInvalidationNotifierInterface;
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
 use dcardenasl\Ci4ApiCore\Dto\SecurityContext;
 use dcardenasl\Ci4ApiCore\Localization\LocalizedTranslationStore;
@@ -39,6 +40,7 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
         ResponseMapperInterface $responseMapper,
         LocalizedTranslationStore $translationStore,
         PublicSlugStore $slugStore,
+        private readonly PublicCacheInvalidationNotifierInterface $cacheInvalidator,
     ) {
         parent::__construct($collectionItemRepository, $responseMapper);
         $this->translationStore = $translationStore;
@@ -121,6 +123,7 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
     {
         $this->localizedAfterStore($entity, $context);
         $this->syncPublicSlugs($entity);
+        $this->cacheInvalidator->invalidate(['collection_items']);
     }
 
     /**
@@ -138,6 +141,13 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
     {
         $this->localizedAfterUpdate($entity, $context);
         $this->syncPublicSlugs($entity);
+        $this->cacheInvalidator->invalidate(['collection_items']);
+    }
+
+    protected function afterDelete(object $entity, ?SecurityContext $context): void
+    {
+        parent::afterDelete($entity, $context);
+        $this->cacheInvalidator->invalidate(['collection_items']);
     }
 
     /**

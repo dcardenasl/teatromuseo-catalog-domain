@@ -90,6 +90,7 @@ trait CatalogDomainServices
             new \dcardenasl\Ci4ApiCore\Repositories\GenericRepository(model(\App\Models\CategoryModel::class)),
             static::categoryResponseMapper(),
             static::localizedTranslationStore(),
+            static::publicCacheInvalidationNotifier(),
         );
     }
 
@@ -114,6 +115,7 @@ trait CatalogDomainServices
             new \dcardenasl\Ci4ApiCore\Repositories\GenericRepository(model(\App\Models\TechniqueModel::class)),
             static::techniqueResponseMapper(),
             static::localizedTranslationStore(),
+            static::publicCacheInvalidationNotifier(),
         );
     }
 
@@ -139,6 +141,7 @@ trait CatalogDomainServices
             static::collectionItemResponseMapper(),
             static::localizedTranslationStore(),
             static::publicSlugStore(),
+            static::publicCacheInvalidationNotifier(),
         );
     }
 
