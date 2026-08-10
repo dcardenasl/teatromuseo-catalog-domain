@@ -446,6 +446,153 @@
                 }
             }
         },
+        "/api/v1/public-read/{locale}/collection-items": {
+            "get": {
+                "tags": [
+                    "Public Read - Catalog"
+                ],
+                "summary": "List active collection items",
+                "operationId": "b6b0ff4364236e6002c12c4a81285952",
+                "parameters": [
+                    {
+                        "name": "locale",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "technique",
+                        "in": "query",
+                        "description": "Comma-separated technique slugs",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "technique_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "name",
+                                "created_at",
+                                "id"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PublicRead envelope"
+                    },
+                    "401": {
+                        "description": "Missing or invalid X-App-Key"
+                    },
+                    "422": {
+                        "description": "Invalid query"
+                    }
+                }
+            }
+        },
+        "/api/v1/public-read/{locale}/collection-items/{idOrSlug}": {
+            "get": {
+                "tags": [
+                    "Public Read - Catalog"
+                ],
+                "summary": "Get one active collection item",
+                "operationId": "b2b34ec02baa7ef8ebd4af8f7a8c5ccb",
+                "parameters": [
+                    {
+                        "name": "locale",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "idOrSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PublicRead envelope"
+                    },
+                    "401": {
+                        "description": "Missing or invalid X-App-Key"
+                    },
+                    "404": {
+                        "description": "Not found or inactive"
+                    }
+                }
+            }
+        },
         "/api/v1/catalog/techniques": {
             "get": {
                 "tags": [
@@ -1748,6 +1895,10 @@
         {
             "name": "Public Catalog",
             "description": "Public Catalog"
+        },
+        {
+            "name": "Public Read - Catalog",
+            "description": "Public Read - Catalog"
         }
     ]
 }

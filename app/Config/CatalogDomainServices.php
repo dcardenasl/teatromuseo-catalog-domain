@@ -6,6 +6,19 @@ namespace Config;
 
 trait CatalogDomainServices
 {
+    public static function publicReadCollectionItemReader(bool $getShared = true): \App\Interfaces\Catalog\PublicReadCollectionItemReaderInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('publicReadCollectionItemReader');
+        }
+
+        return new \App\Services\Catalog\PublicReadCollectionItemReader(
+            \Config\Database::connect(),
+            static::hubClient(),
+            (string) config('Localization')->legacyFallbackLocale,
+        );
+    }
+
     /**
      * Shared per-request locale resolver.
      *
@@ -18,7 +31,11 @@ trait CatalogDomainServices
             return static::getSharedInstance('requestLocaleResolver');
         }
 
-        $request = \Config\Services::request();
+        // Feature tests and HTTP requests may already have an IncomingRequest
+        // registered under the shared key. RequestLocaleResolver only needs
+        // the request shape, so construct the ApiRequest explicitly here and
+        // avoid the typed shared-service collision.
+        $request = \Config\Services::request(false);
 
         return new \dcardenasl\Ci4ApiCore\Localization\RequestLocaleResolver(
             $request instanceof \CodeIgniter\HTTP\IncomingRequest ? $request : null

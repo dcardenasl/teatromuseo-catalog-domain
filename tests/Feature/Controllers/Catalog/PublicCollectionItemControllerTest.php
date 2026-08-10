@@ -112,6 +112,64 @@ final class PublicCollectionItemControllerTest extends CIUnitTestCase
         $this->assertArrayNotHasKey('name', $body);
     }
 
+    public function testPublicReadListingUsesVersionedEnvelope(): void
+    {
+        $this->createItem('Pieza PublicRead');
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/es/collection-items?fields=id,name,slug');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertTrue($body['ok'] ?? false);
+        $this->assertSame(1, $body['version'] ?? null);
+        $this->assertSame('catalog', $body['source']['domain'] ?? null);
+        $this->assertSame('es', $body['meta']['locale'] ?? null);
+        $this->assertSame('Pieza PublicRead', $body['data'][0]['name'] ?? null);
+    }
+
+    public function testPublicReadListingRejectsMissingAppKey(): void
+    {
+        $result = $this->get('/api/v1/public-read/es/collection-items');
+
+        $result->assertStatus(401);
+    }
+
+    public function testPublicReadDetailKeepsLegacySlugLookupInsideNewContract(): void
+    {
+        $this->createItem('Pieza PublicRead Detalle');
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/es/collection-items/pieza-publicread-detalle');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertTrue($body['ok'] ?? false);
+        $this->assertSame('pieza-publicread-detalle', $body['data']['slug'] ?? null);
+        $this->assertArrayHasKey('techniques', $body['data'] ?? []);
+    }
+
+    public function testPublicReadSearchIncludesRequestedLocaleTranslations(): void
+    {
+        $created = $this->createItem('Pieza sin traducción');
+        $this->db->table('catalog_translations')->insert([
+            'translatable_type' => 'collection_item',
+            'translatable_id' => $created['id'],
+            'locale' => 'en',
+            'field' => 'name',
+            'value' => 'Translated Puppet',
+        ]);
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items?search=Translated%20Puppet&fields=id,name');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertSame(1, $body['meta']['total'] ?? null);
+        $this->assertSame((int) $created['id'], $body['data'][0]['id'] ?? null);
+        $this->assertSame('Translated Puppet', $body['data'][0]['name'] ?? null);
+    }
+
     /**
      * @return array<string, mixed>
      */
