@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`/api/v1/public-read/{locale}/collection-items` endpoints** — versioned envelope read model
+  for public collection-item listing/detail, backed by a set-based query and batched Hub media
+  resolution, gated by a dedicated public-read throttle bucket.
+- **`HubClient::resolvePublicFileMeta()`** — chunks batches to the Hub's 200-id limit and falls
+  back to a bounded stale cache when the Hub is unreachable, instead of dropping the miss set.
 - **Localized technique metadata** — public technique responses now expose localized metadata
   consistently alongside the existing catalog content.
 
