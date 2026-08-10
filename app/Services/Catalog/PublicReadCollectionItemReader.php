@@ -181,33 +181,38 @@ final class PublicReadCollectionItemReader implements PublicReadCollectionItemRe
         }
 
         $ids = array_values(array_unique(array_map(static fn (array $row): int => (int) $row['id'], $rows)));
-        $translationResult = $this->db->table('catalog_translations')
-            ->select('translatable_id, locale, field, value')
-            ->where('translatable_type', self::RESOURCE_TYPE)
-            ->whereIn('translatable_id', $ids)
-            ->whereIn('locale', array_values(array_unique([$locale, $this->fallbackLocale])))
-            ->get();
-        $translations = $translationResult !== false ? $translationResult->getResultArray() : [];
-
         $translationMap = [];
-        foreach ($translations as $translation) {
-            $translationMap[(int) $translation['translatable_id']][(string) $translation['locale']][(string) $translation['field']] = (string) $translation['value'];
+        if ($this->needsTranslations($fields)) {
+            $translationResult = $this->db->table('catalog_translations')
+                ->select('translatable_id, locale, field, value')
+                ->where('translatable_type', self::RESOURCE_TYPE)
+                ->whereIn('translatable_id', $ids)
+                ->whereIn('locale', array_values(array_unique([$locale, $this->fallbackLocale])))
+                ->get();
+            $translations = $translationResult !== false ? $translationResult->getResultArray() : [];
+
+            foreach ($translations as $translation) {
+                $translationMap[(int) $translation['translatable_id']][(string) $translation['locale']][(string) $translation['field']] = (string) $translation['value'];
+            }
         }
 
-        $slugResult = $this->db->table('catalog_public_slugs')
-            ->select('resource_id, locale, slug')
-            ->where('resource_type', self::RESOURCE_TYPE)
-            ->whereIn('resource_id', $ids)
-            ->whereIn('locale', array_values(array_unique([$locale, $this->fallbackLocale])))
-            ->get();
-        $slugs = $slugResult !== false ? $slugResult->getResultArray() : [];
         $slugMap = [];
-        foreach ($slugs as $slug) {
-            $slugMap[(int) $slug['resource_id']][(string) $slug['locale']] = (string) $slug['slug'];
+        if ($this->needsSlugs($fields)) {
+            $slugResult = $this->db->table('catalog_public_slugs')
+                ->select('resource_id, locale, slug')
+                ->where('resource_type', self::RESOURCE_TYPE)
+                ->whereIn('resource_id', $ids)
+                ->whereIn('locale', array_values(array_unique([$locale, $this->fallbackLocale])))
+                ->get();
+            $slugs = $slugResult !== false ? $slugResult->getResultArray() : [];
+
+            foreach ($slugs as $slug) {
+                $slugMap[(int) $slug['resource_id']][(string) $slug['locale']] = (string) $slug['slug'];
+            }
         }
 
         $techniqueMap = [];
-        if ($detail) {
+        if ($detail && $this->needsField($fields, 'techniques')) {
             $techniqueResult = $this->db->table('collection_item_technique cit')
                 ->select('cit.collection_item_id, t.id, t.name, t.slug, t.summary')
                 ->join('techniques t', 't.id = cit.technique_id', 'inner')
@@ -226,19 +231,21 @@ final class PublicReadCollectionItemReader implements PublicReadCollectionItemRe
             }
         }
 
-        $categoryIds = array_values(array_unique(array_map(static fn (array $row): int => (int) ($row['category_id'] ?? 0), $rows)));
-        $categoryResult = $categoryIds === [] ? false : $this->db->table('categories c')
-            ->select('c.id, c.name, c.slug, c.short_description')
-            ->whereIn('c.id', $categoryIds)->where('c.deleted_at', null)->get();
         $categoryMap = [];
-        if ($categoryResult !== false) {
-            foreach ($categoryResult->getResultArray() as $category) {
-                $categoryMap[(int) $category['id']] = [
-                    'id' => (int) $category['id'],
-                    'name' => (string) $category['name'],
-                    'slug' => (string) $category['slug'],
-                    'summary' => $category['short_description'],
-                ];
+        if ($this->needsField($fields, 'category')) {
+            $categoryIds = array_values(array_unique(array_map(static fn (array $row): int => (int) ($row['category_id'] ?? 0), $rows)));
+            $categoryResult = $categoryIds === [] ? false : $this->db->table('categories c')
+                ->select('c.id, c.name, c.slug, c.short_description')
+                ->whereIn('c.id', $categoryIds)->where('c.deleted_at', null)->get();
+            if ($categoryResult !== false) {
+                foreach ($categoryResult->getResultArray() as $category) {
+                    $categoryMap[(int) $category['id']] = [
+                        'id' => (int) $category['id'],
+                        'name' => (string) $category['name'],
+                        'slug' => (string) $category['slug'],
+                        'summary' => $category['short_description'],
+                    ];
+                }
             }
         }
 
@@ -300,6 +307,36 @@ final class PublicReadCollectionItemReader implements PublicReadCollectionItemRe
         }
 
         return $result;
+    }
+
+    /** @param list<string> $fields */
+    private function needsTranslations(array $fields): bool
+    {
+        return $this->needsOneOf($fields, [
+            'name', 'summary', 'curiosidad', 'contenido', 'ubicacion',
+            'physical_description', 'localized', 'translations',
+        ]);
+    }
+
+    /** @param list<string> $fields */
+    private function needsSlugs(array $fields): bool
+    {
+        return $this->needsOneOf($fields, ['slug', 'slugs']);
+    }
+
+    /** @param list<string> $fields */
+    private function needsField(array $fields, string $field): bool
+    {
+        return $fields === [] || in_array($field, $fields, true);
+    }
+
+    /**
+     * @param list<string> $fields
+     * @param list<string> $required
+     */
+    private function needsOneOf(array $fields, array $required): bool
+    {
+        return $fields === [] || array_intersect($required, $fields) !== [];
     }
 
     /**
