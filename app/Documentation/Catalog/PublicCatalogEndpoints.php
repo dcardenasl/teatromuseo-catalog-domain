@@ -16,6 +16,7 @@ class PublicCatalogEndpoints
         tags: ['Public Catalog'],
         summary: 'List active collection items for the public site',
         description: 'Requires the X-App-Key header bound to the web application. Localized content follows Accept-Language.',
+        security: [['appKeyAuth' => []]],
         parameters: [
             new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer')),
             new OA\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', maximum: 100)),
@@ -50,6 +51,7 @@ class PublicCatalogEndpoints
         tags: ['Public Catalog'],
         summary: 'Get an active collection item by id, inventory code, or per-locale routing slug',
         description: 'Slug resolution prefers the Accept-Language locale and falls back to any locale, so shared URLs keep working across languages.',
+        security: [['appKeyAuth' => []]],
         parameters: [
             new OA\Parameter(name: 'idOrSlug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],

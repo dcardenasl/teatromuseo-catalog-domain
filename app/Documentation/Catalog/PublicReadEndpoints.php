@@ -13,6 +13,7 @@ final class PublicReadEndpoints
         path: '/api/v1/public-read/{locale}/collection-items',
         tags: ['Public Read - Catalog'],
         summary: 'List active collection items',
+        security: [['appKeyAuth' => []]],
         parameters: [
             new OA\Parameter(name: 'locale', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1)),
@@ -26,7 +27,11 @@ final class PublicReadEndpoints
             new OA\Parameter(name: 'fields', in: 'query', schema: new OA\Schema(type: 'string')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'PublicRead envelope'),
+            new OA\Response(
+                response: 200,
+                description: 'PublicRead envelope',
+                content: new OA\JsonContent(ref: '#/components/schemas/PublicReadEnvelope'),
+            ),
             new OA\Response(response: 401, description: 'Missing or invalid X-App-Key'),
             new OA\Response(response: 422, description: 'Invalid query'),
         ]
@@ -39,13 +44,18 @@ final class PublicReadEndpoints
         path: '/api/v1/public-read/{locale}/collection-items/{idOrSlug}',
         tags: ['Public Read - Catalog'],
         summary: 'Get one active collection item',
+        security: [['appKeyAuth' => []]],
         parameters: [
             new OA\Parameter(name: 'locale', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'idOrSlug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'fields', in: 'query', schema: new OA\Schema(type: 'string')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'PublicRead envelope'),
+            new OA\Response(
+                response: 200,
+                description: 'PublicRead envelope',
+                content: new OA\JsonContent(ref: '#/components/schemas/PublicReadEnvelope'),
+            ),
             new OA\Response(response: 401, description: 'Missing or invalid X-App-Key'),
             new OA\Response(response: 404, description: 'Not found or inactive'),
         ]

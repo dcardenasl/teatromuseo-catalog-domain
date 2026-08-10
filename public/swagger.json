@@ -405,7 +405,12 @@
                     "401": {
                         "description": "Missing or invalid X-App-Key"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "appKeyAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/public/catalog/collection-items/{idOrSlug}": {
@@ -443,7 +448,12 @@
                     "404": {
                         "description": "Not found or inactive"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "appKeyAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/public-read/{locale}/collection-items": {
@@ -537,7 +547,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "PublicRead envelope"
+                        "description": "PublicRead envelope",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PublicReadEnvelope"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Missing or invalid X-App-Key"
@@ -545,7 +562,12 @@
                     "422": {
                         "description": "Invalid query"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "appKeyAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/public-read/{locale}/collection-items/{idOrSlug}": {
@@ -582,7 +604,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "PublicRead envelope"
+                        "description": "PublicRead envelope",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PublicReadEnvelope"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Missing or invalid X-App-Key"
@@ -590,7 +619,12 @@
                     "404": {
                         "description": "Not found or inactive"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "appKeyAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/catalog/techniques": {
@@ -943,6 +977,64 @@
     },
     "components": {
         "schemas": {
+            "PublicReadEnvelope": {
+                "required": [
+                    "version",
+                    "ok",
+                    "data",
+                    "meta",
+                    "source",
+                    "messages"
+                ],
+                "properties": {
+                    "version": {
+                        "description": "Machine-readable minimum envelope shared by Catalog PublicRead responses.",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "ok": {
+                        "type": "boolean"
+                    },
+                    "data": {
+                        "nullable": true
+                    },
+                    "meta": {
+                        "type": "object"
+                    },
+                    "source": {
+                        "required": [
+                            "domain",
+                            "state",
+                            "stale"
+                        ],
+                        "properties": {
+                            "domain": {
+                                "type": "string",
+                                "example": "catalog"
+                            },
+                            "state": {
+                                "type": "string",
+                                "enum": [
+                                    "fresh",
+                                    "stale",
+                                    "unavailable"
+                                ]
+                            },
+                            "stale": {
+                                "type": "boolean"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "CategoryCreateRequest": {
                 "properties": {
                     "name": {
