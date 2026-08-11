@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Catalog;
 
+use App\DTO\Response\Catalog\CollectionItemResponseDTO;
 use App\Entities\CollectionItemEntity;
+use App\Interfaces\Catalog\AdminListProjectionRepositoryInterface;
 use App\Interfaces\Catalog\CollectionItemServiceInterface;
 use App\Interfaces\PublicCacheInvalidationNotifierInterface;
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
+use dcardenasl\Ci4ApiCore\Dto\PaginatedResponseDTO;
 use dcardenasl\Ci4ApiCore\Dto\SecurityContext;
 use dcardenasl\Ci4ApiCore\Localization\LocalizedTranslationStore;
 use dcardenasl\Ci4ApiCore\Localization\PublicSlugStore;
@@ -41,6 +44,7 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
         LocalizedTranslationStore $translationStore,
         PublicSlugStore $slugStore,
         private readonly PublicCacheInvalidationNotifierInterface $cacheInvalidator,
+        private readonly ?AdminListProjectionRepositoryInterface $collectionItemListRepository = null,
     ) {
         parent::__construct($collectionItemRepository, $responseMapper);
         $this->translationStore = $translationStore;
@@ -48,6 +52,34 @@ class CollectionItemService extends BaseCrudService implements CollectionItemSer
         $this->slugStore = $slugStore;
         $this->slugResourceType = 'collection_item';
         $this->slugSourceField = 'name';
+    }
+
+    public function index(DataTransferObjectInterface $request, ?SecurityContext $context = null): DataTransferObjectInterface
+    {
+        $requestData = $request->toArray();
+        if (($requestData['projection'] ?? 'full') !== 'list' || $this->collectionItemListRepository === null) {
+            return parent::index($request, $context);
+        }
+
+        $result = $this->collectionItemListRepository->paginateAdminList($requestData, (int) ($requestData['page'] ?? 1), (int) ($requestData['per_page'] ?? 20));
+        $data = array_map(static function (array $row): CollectionItemResponseDTO {
+            $decoded = \App\Support\AdminListProjectionDecoder::translations($row['translations_data'] ?? null);
+            $row['translations'] = array_map(static fn (array $translation): array => [
+                'locale' => $translation['locale'],
+                ...$translation['fields'],
+            ], $decoded);
+            $row['slugs'] = \App\Support\AdminListProjectionDecoder::slugs($row['slugs_data'] ?? null);
+            $row['slug'] = $row['slugs'] !== [] ? (string) reset($row['slugs']) : '';
+            $row['localized'] = array_filter([
+                'name' => (string) ($row['name'] ?? ''),
+                'summary' => (string) ($row['summary'] ?? ''),
+            ], static fn (string $value): bool => $value !== '');
+            unset($row['translations_data'], $row['slugs_data'], $row['total_items']);
+
+            return CollectionItemResponseDTO::fromArray($row);
+        }, $result['data']);
+
+        return PaginatedResponseDTO::fromArray(['data' => $data, 'total' => $result['total'], 'page' => $result['page'], 'per_page' => $result['per_page']]);
     }
 
     /**

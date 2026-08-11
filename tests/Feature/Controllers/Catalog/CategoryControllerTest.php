@@ -39,4 +39,11 @@ final class CategoryControllerTest extends CIUnitTestCase
 
         $result->assertStatus(401);
     }
+
+    public function testDashboardSummarySmoke(): void
+    {
+        $result = $this->get('/api/v1/catalog/dashboard/summary');
+
+        $result->assertStatus(401);
+    }
 }

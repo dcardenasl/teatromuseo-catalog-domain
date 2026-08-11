@@ -14,6 +14,7 @@ readonly class TechniqueIndexRequestDTO extends BaseRequestDTO
     public int $per_page;
     public ?string $search;
     public string $sort;
+    public string $projection;
 
     /**
      * @return array<string, string>
@@ -25,6 +26,7 @@ readonly class TechniqueIndexRequestDTO extends BaseRequestDTO
             'per_page'  => 'permit_empty|is_natural_no_zero|less_than[101]',
             'search'    => 'permit_empty|string|max_length[100]',
             'sort'      => 'permit_empty|max_length[100]',
+            'projection' => 'permit_empty|in_list[full,list]',
         ];
     }
 
@@ -37,6 +39,7 @@ readonly class TechniqueIndexRequestDTO extends BaseRequestDTO
         $this->per_page = isset($data['per_page']) ? (int) $data['per_page'] : 20;
         $this->search = $data['search'] ?? null;
         $this->sort = (string) ($data['sort'] ?? '');
+        $this->projection = (string) ($data['projection'] ?? 'full');
     }
 
     /**
@@ -49,6 +52,7 @@ readonly class TechniqueIndexRequestDTO extends BaseRequestDTO
             'per_page' => $this->per_page,
             'search' => $this->search,
             'sort' => $this->sort,
+            'projection' => $this->projection,
         ];
     }
 }

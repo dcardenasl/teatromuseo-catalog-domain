@@ -6,6 +6,42 @@ namespace Config;
 
 trait CatalogDomainServices
 {
+    public static function categoryListRepository(bool $getShared = true): \App\Interfaces\Catalog\AdminListProjectionRepositoryInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('categoryListRepository');
+        }
+
+        return new \App\Repositories\Catalog\CategoryListRepository(
+            model(\App\Models\CategoryModel::class),
+            \Config\Database::connect(),
+        );
+    }
+
+    public static function techniqueListRepository(bool $getShared = true): \App\Interfaces\Catalog\AdminListProjectionRepositoryInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('techniqueListRepository');
+        }
+
+        return new \App\Repositories\Catalog\TechniqueListRepository(
+            model(\App\Models\TechniqueModel::class),
+            \Config\Database::connect(),
+        );
+    }
+
+    public static function collectionItemListRepository(bool $getShared = true): \App\Interfaces\Catalog\AdminListProjectionRepositoryInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('collectionItemListRepository');
+        }
+
+        return new \App\Repositories\Catalog\CollectionItemListRepository(
+            model(\App\Models\CollectionItemModel::class),
+            \Config\Database::connect(),
+        );
+    }
+
     public static function dashboardSummaryService(bool $getShared = true): \App\Services\Admin\DashboardSummaryService
     {
         if ($getShared) {
@@ -100,6 +136,7 @@ trait CatalogDomainServices
             static::categoryResponseMapper(),
             static::localizedTranslationStore(),
             static::publicCacheInvalidationNotifier(),
+            static::categoryListRepository(),
         );
     }
 
@@ -125,6 +162,7 @@ trait CatalogDomainServices
             static::techniqueResponseMapper(),
             static::localizedTranslationStore(),
             static::publicCacheInvalidationNotifier(),
+            static::techniqueListRepository(),
         );
     }
 
@@ -151,6 +189,7 @@ trait CatalogDomainServices
             static::localizedTranslationStore(),
             static::publicSlugStore(),
             static::publicCacheInvalidationNotifier(),
+            static::collectionItemListRepository(),
         );
     }
 
