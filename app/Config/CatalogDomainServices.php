@@ -6,6 +6,15 @@ namespace Config;
 
 trait CatalogDomainServices
 {
+    public static function dashboardSummaryService(bool $getShared = true): \App\Services\Admin\DashboardSummaryService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('dashboardSummaryService');
+        }
+
+        return new \App\Services\Admin\DashboardSummaryService(static::dashboardSummaryRepository());
+    }
+
     public static function publicReadCollectionItemReader(bool $getShared = true): \App\Interfaces\Catalog\PublicReadCollectionItemReaderInterface
     {
         if ($getShared) {

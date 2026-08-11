@@ -6,6 +6,8 @@ declare(strict_types=1);
 $routes->group('catalog', ['namespace' => '\App\Controllers\Api\V1\Catalog'], function ($routes): void {
     // Auth & Admin Protected Group
     $routes->group('', ['filter' => ['domainauth', 'throttle']], function ($routes): void {
+        $routes->get('dashboard/summary', 'DashboardSummaryController::index');
+
         // Resource routes will be injected here
         $routes->group('', ['filter' => 'permission:catalog.category.read'], function ($routes): void {
             $routes->get('categories', 'CategoryController::index');

@@ -6,6 +6,19 @@ namespace Config;
 
 trait RepositoryModelServices
 {
+    public static function dashboardSummaryRepository(bool $getShared = true): \App\Interfaces\Admin\DashboardSummaryRepositoryInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('dashboardSummaryRepository');
+        }
+
+        return new \App\Repositories\Admin\DashboardSummaryRepository(
+            new \App\Models\CollectionItemModel(),
+            new \App\Models\CategoryModel(),
+            new \App\Models\TechniqueModel(),
+        );
+    }
+
     public static function auditRepository(bool $getShared = true): \dcardenasl\Ci4ApiCore\Repositories\AuditRepositoryInterface
     {
         if ($getShared) {
