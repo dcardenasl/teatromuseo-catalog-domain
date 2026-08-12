@@ -181,6 +181,179 @@ final class PublicCollectionItemControllerTest extends CIUnitTestCase
         $this->assertSame('Translated Puppet', $body['data'][0]['name'] ?? null);
     }
 
+    public function testPublicReadRevisionChangesWhenASelectedTranslationChanges(): void
+    {
+        $created = $this->createItem('Pieza revisada');
+        $this->db->table('catalog_translations')->insert([
+            'translatable_type' => 'collection_item',
+            'translatable_id' => $created['id'],
+            'locale' => 'en',
+            'field' => 'name',
+            'value' => 'First publication',
+        ]);
+
+        $first = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items?fields=id,name');
+        $firstBody = json_decode((string) $first->getJSON(), true);
+
+        $this->db->table('catalog_translations')
+            ->where('translatable_type', 'collection_item')
+            ->where('translatable_id', $created['id'])
+            ->where('locale', 'en')
+            ->where('field', 'name')
+            ->update(['value' => 'Second publication']);
+
+        $second = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items?fields=id,name');
+        $secondBody = json_decode((string) $second->getJSON(), true);
+
+        $this->assertNotSame(
+            $firstBody['meta']['source_revision'] ?? null,
+            $secondBody['meta']['source_revision'] ?? null,
+        );
+        $this->assertSame('Second publication', $secondBody['data'][0]['name'] ?? null);
+    }
+
+    public function testPublicReadDetailPrefersRequestedLocaleSlugOverFallbackSlug(): void
+    {
+        $fallback = $this->createItem('Fallback slug target', 'INV-FALLBACK');
+        $requested = $this->createItem('Requested slug target', 'INV-REQUESTED');
+
+        $this->db->table('catalog_public_slugs')
+            ->whereIn('resource_id', [(int) $fallback['id'], (int) $requested['id']])
+            ->delete();
+        $this->db->table('catalog_public_slugs')->insertBatch([
+            [
+                'resource_type' => 'collection_item',
+                'resource_id' => (int) $fallback['id'],
+                'locale' => 'es',
+                'slug' => 'gala',
+            ],
+            [
+                'resource_type' => 'collection_item',
+                'resource_id' => (int) $requested['id'],
+                'locale' => 'en',
+                'slug' => 'gala',
+            ],
+        ]);
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items/gala?fields=id');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertSame((int) $requested['id'], $body['data']['id'] ?? null);
+    }
+
+    public function testPublicReadDetailPrefersInventoryCodeOverSlugCollision(): void
+    {
+        $inventoryWinner = $this->createItem('Inventory winner', 'CODE-AMBIGUOUS');
+        $slugLoser = $this->createItem('Slug loser', 'INV-SLUG-LOSER');
+
+        $this->db->table('catalog_public_slugs')
+            ->where('resource_id', (int) $slugLoser['id'])
+            ->delete();
+        $this->db->table('catalog_public_slugs')->insert([
+            'resource_type' => 'collection_item',
+            'resource_id' => (int) $slugLoser['id'],
+            'locale' => 'en',
+            'slug' => 'CODE-AMBIGUOUS',
+        ]);
+
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items/CODE-AMBIGUOUS?fields=id');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertSame((int) $inventoryWinner['id'], $body['data']['id'] ?? null);
+    }
+
+    public function testPublicReadLocalizesCategoryAndTechniqueInOneDetailProjection(): void
+    {
+        $this->db->table('catalog_translations')->insert([
+            'translatable_type' => 'category',
+            'translatable_id' => $this->categoryId,
+            'locale' => 'en',
+            'field' => 'name',
+            'value' => 'Puppets',
+        ]);
+        $this->db->table('techniques')->insert([
+            'name' => 'Madera',
+            'slug' => 'madera',
+            'summary' => 'Resumen madera',
+            'sort_order' => 1,
+        ]);
+        $techniqueId = (int) $this->db->insertID();
+        $this->db->table('catalog_translations')->insert([
+            'translatable_type' => 'technique',
+            'translatable_id' => $techniqueId,
+            'locale' => 'en',
+            'field' => 'name',
+            'value' => 'Wood',
+        ]);
+        $created = $this->createItem('Pieza localizada', 'INV-LOCALIZED');
+        $this->db->table('collection_item_technique')->insert([
+            'collection_item_id' => (int) $created['id'],
+            'technique_id' => $techniqueId,
+        ]);
+
+        $slug = (string) ($created['slugs']['es'] ?? '');
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/en/collection-items/' . $slug . '?fields=id,category,techniques');
+
+        $result->assertStatus(200);
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertSame('Puppets', $body['data']['category']['name'] ?? null);
+        $this->assertSame('Wood', $body['data']['techniques'][0]['name'] ?? null);
+    }
+
+    public function testPublicReadFiltersDoNotExposeSoftDeletedRelations(): void
+    {
+        $this->db->table('categories')->insert([
+            'name' => 'Deleted category',
+            'slug' => 'deleted-category',
+            'short_description' => 'Hidden',
+            'deleted_at' => '2026-08-11 12:00:00',
+        ]);
+        $deletedCategoryId = (int) $this->db->insertID();
+        $categoryItem = $this->createItem('Item in deleted category', 'INV-DELETED-CATEGORY');
+        $this->db->table('collection_items')->where('id', (int) $categoryItem['id'])->update([
+            'category_id' => $deletedCategoryId,
+        ]);
+
+        $this->db->table('techniques')->insert([
+            'name' => 'Deleted technique',
+            'slug' => 'deleted-technique',
+            'deleted_at' => '2026-08-11 12:00:00',
+        ]);
+        $deletedTechniqueId = (int) $this->db->insertID();
+        $techniqueItem = $this->createItem('Item in deleted technique', 'INV-DELETED-TECHNIQUE');
+        $this->db->table('collection_item_technique')->insert([
+            'collection_item_id' => (int) $techniqueItem['id'],
+            'technique_id' => $deletedTechniqueId,
+        ]);
+
+        $categoryResult = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/es/collection-items?category_id=' . $deletedCategoryId . '&fields=id');
+        $categoryResult->assertStatus(200);
+        $categoryBody = json_decode((string) $categoryResult->getJSON(), true);
+        $this->assertSame(0, $categoryBody['meta']['total'] ?? null);
+
+        $techniqueResult = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/es/collection-items?technique_id=' . $deletedTechniqueId . '&fields=id');
+        $techniqueResult->assertStatus(200);
+        $techniqueBody = json_decode((string) $techniqueResult->getJSON(), true);
+        $this->assertSame(0, $techniqueBody['meta']['total'] ?? null);
+    }
+
+    public function testPublicReadRejectsPagesBeyondTheConfiguredLimit(): void
+    {
+        $result = $this->withHeaders(['X-App-Key' => self::WEB_API_KEY])
+            ->get('/api/v1/public-read/es/collection-items?page=10001');
+
+        $result->assertStatus(422);
+    }
+
     /**
      * @return array<string, mixed>
      */

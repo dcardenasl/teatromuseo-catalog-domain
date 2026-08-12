@@ -39,6 +39,7 @@ final class PublicReadQueryBudgetTest extends CIUnitTestCase
         $this->db->table('collection_item_technique')->where('collection_item_id >', 0)->delete();
         $this->db->table('collection_items')->where('id >', 0)->delete();
         $this->db->table('categories')->where('id >', 0)->delete();
+        $this->db->table('techniques')->where('id >', 0)->delete();
         $this->db->enableForeignKeyChecks();
     }
 
@@ -129,6 +130,143 @@ final class PublicReadQueryBudgetTest extends CIUnitTestCase
         $this->assertNotSame('ALL', $listingPlan['type'] ?? null, json_encode($listingPlan));
     }
 
+    public function testDetailFullProjectionStaysSetBasedAndExplainable(): void
+    {
+        $fixture = $this->createFixture();
+
+        $measurement = $this->measureGet('/api/v1/public-read/en/collection-items/' . $fixture['item_id']);
+        $measurement['response']->assertStatus(200);
+        $body = json_decode((string) $measurement['response']->getJSON(), true);
+
+        $this->assertSame($fixture['item_id'], $body['data']['id'] ?? null);
+        $this->assertArrayHasKey('category', $body['data'] ?? []);
+        $this->assertArrayHasKey('techniques', $body['data'] ?? []);
+        $this->assertLessThanOrEqual(6, $measurement['query_count'], $this->querySummary($measurement['queries']));
+        $this->assertLessThanOrEqual(500.0, $this->totalDuration($measurement['queries']), $this->querySummary($measurement['queries']));
+
+        $detailSql = $this->findBaseCollectionQuery($measurement['queries']);
+        $this->assertNotNull($detailSql, $this->querySummary($measurement['queries']));
+        $plan = $this->db->query('EXPLAIN ' . $detailSql)->getResultArray();
+        $detailPlan = $this->findPlanRow($plan, 'ci');
+        $this->assertNotNull($detailPlan, json_encode($plan, JSON_UNESCAPED_SLASHES));
+        $this->assertNotSame('ALL', $detailPlan['type'] ?? null, json_encode($detailPlan));
+    }
+
+    public function testFiltersSearchAndOrdersStayWithinTheReadBudget(): void
+    {
+        $fixture = $this->createFixture();
+        $cases = [
+            '/api/v1/public-read/en/collection-items?category_id=' . $fixture['category_id'] . '&fields=id,name&sort=name',
+            '/api/v1/public-read/en/collection-items?technique_id=' . $fixture['technique_id'] . '&fields=id,name&sort=id',
+            '/api/v1/public-read/en/collection-items?search=Budget%20translated&fields=id,name&sort=created_at',
+            '/api/v1/public-read/en/collection-items?category=budget-category&fields=id,name&sort=name',
+        ];
+
+        foreach ($cases as $path) {
+            $measurement = $this->measureGet($path);
+            $measurement['response']->assertStatus(200);
+            $this->assertLessThanOrEqual(6, $measurement['query_count'], $path . ' ' . $this->querySummary($measurement['queries']));
+            $this->assertLessThanOrEqual(500.0, $this->totalDuration($measurement['queries']), $path . ' ' . $this->querySummary($measurement['queries']));
+
+            $listingSql = $this->findQuery($measurement['queries'], 'FROM `collection_items` `ci`');
+            $this->assertNotNull($listingSql, $path . ' ' . $this->querySummary($measurement['queries']));
+            $plan = $this->db->query('EXPLAIN ' . $listingSql)->getResultArray();
+            $listingPlan = $this->findPlanRow($plan, 'ci');
+            $this->assertNotNull($listingPlan, $path . ' ' . json_encode($plan, JSON_UNESCAPED_SLASHES));
+            $this->assertNotSame('ALL', $listingPlan['type'] ?? null, $path . ' ' . json_encode($listingPlan));
+        }
+    }
+
+    public function testSparseNameFieldOnlyLoadsTheRequestedTranslation(): void
+    {
+        $this->createFixture();
+
+        $measurement = $this->measureGet('/api/v1/public-read/en/collection-items?fields=name');
+        $measurement['response']->assertStatus(200);
+        $translationSql = $this->findQueryContaining($measurement['queries'], 'FROM `catalog_translations`');
+
+        $this->assertNotNull($translationSql, $this->querySummary($measurement['queries']));
+        $this->assertStringContainsString("'name'", (string) $translationSql);
+        $this->assertStringNotContainsString("'summary'", (string) $translationSql);
+        $this->assertStringNotContainsString("'contenido'", (string) $translationSql);
+        $this->assertStringNotContainsString('FROM `categories`', $this->querySummary($measurement['queries']));
+        $this->assertStringNotContainsString('FROM `collection_item_technique`', $this->querySummary($measurement['queries']));
+    }
+
+    /** @return array{category_id:int,technique_id:int,item_id:int,slug:string} */
+    private function createFixture(): array
+    {
+        $this->db->table('categories')->insert([
+            'name' => 'Budget category',
+            'slug' => 'budget-category',
+            'short_description' => 'Budget fixture',
+            'sort_order' => 1,
+        ]);
+        $categoryId = (int) $this->db->insertID();
+
+        $this->db->table('techniques')->insert([
+            'name' => 'Budget technique',
+            'slug' => 'budget-technique',
+            'summary' => 'Budget fixture',
+            'sort_order' => 1,
+        ]);
+        $techniqueId = (int) $this->db->insertID();
+
+        $this->db->table('collection_items')->insert([
+            'name' => 'Budget item',
+            'category_id' => $categoryId,
+            'inventory_code' => 'BUDGET-001',
+            'status' => 'published',
+            'summary' => 'Budget summary',
+            'show_in_totem' => 0,
+            'is_active' => 1,
+            'created_at' => '2026-08-10 12:00:00',
+            'updated_at' => '2026-08-10 12:00:00',
+        ]);
+        $itemId = (int) $this->db->insertID();
+
+        $this->db->table('collection_item_technique')->insert([
+            'collection_item_id' => $itemId,
+            'technique_id' => $techniqueId,
+        ]);
+        $this->db->table('catalog_translations')->insertBatch([
+            [
+                'translatable_type' => 'collection_item',
+                'translatable_id' => $itemId,
+                'locale' => 'en',
+                'field' => 'name',
+                'value' => 'Budget translated',
+            ],
+            [
+                'translatable_type' => 'category',
+                'translatable_id' => $categoryId,
+                'locale' => 'en',
+                'field' => 'name',
+                'value' => 'Budget category translated',
+            ],
+            [
+                'translatable_type' => 'technique',
+                'translatable_id' => $techniqueId,
+                'locale' => 'en',
+                'field' => 'name',
+                'value' => 'Budget technique translated',
+            ],
+        ]);
+        $this->db->table('catalog_public_slugs')->insert([
+            'resource_type' => 'collection_item',
+            'resource_id' => $itemId,
+            'locale' => 'en',
+            'slug' => 'budget-item',
+        ]);
+
+        return [
+            'category_id' => $categoryId,
+            'technique_id' => $techniqueId,
+            'item_id' => $itemId,
+            'slug' => 'budget-item',
+        ];
+    }
+
     /**
      * @return array{response: \CodeIgniter\Test\TestResponse, queries: list<array{sql:string,duration_ms:float}>, query_count:int}
      */
@@ -168,6 +306,33 @@ final class PublicReadQueryBudgetTest extends CIUnitTestCase
     {
         foreach ($queries as $query) {
             if (str_contains($query['sql'], $fragment) && str_contains($query['sql'], 'ORDER BY')) {
+                return $query['sql'];
+            }
+        }
+
+        return null;
+    }
+
+    /** @param list<array{sql:string,duration_ms:float}> $queries */
+    private function findQueryContaining(array $queries, string $fragment): ?string
+    {
+        foreach ($queries as $query) {
+            if (str_contains($query['sql'], $fragment)) {
+                return $query['sql'];
+            }
+        }
+
+        return null;
+    }
+
+    /** @param list<array{sql:string,duration_ms:float}> $queries */
+    private function findBaseCollectionQuery(array $queries): ?string
+    {
+        foreach ($queries as $query) {
+            if (
+                str_contains($query['sql'], 'FROM `collection_items` `ci`')
+                && ! str_contains($query['sql'], 'catalog_public_slugs')
+            ) {
                 return $query['sql'];
             }
         }
