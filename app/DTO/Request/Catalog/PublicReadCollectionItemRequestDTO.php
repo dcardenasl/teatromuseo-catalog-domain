@@ -10,13 +10,17 @@ use dcardenasl\Ci4ApiCore\Dto\BaseRequestDTO;
 /** Request contract for the canonical collection-item listing. */
 readonly class PublicReadCollectionItemRequestDTO extends BaseRequestDTO
 {
+    private const MAX_PAGE = 10_000;
+
+    private const MAX_PER_PAGE = 100;
+
     public function __construct(array $data, ?ValidationInterface $validation = null)
     {
         parent::__construct($data, $validation);
 
         $this->locale = strtolower(trim((string) ($data['locale'] ?? '')));
-        $this->page = max(1, (int) ($data['page'] ?? 1));
-        $this->perPage = min(100, max(1, (int) ($data['per_page'] ?? 20)));
+        $this->page = min(self::MAX_PAGE, max(1, (int) ($data['page'] ?? 1)));
+        $this->perPage = min(self::MAX_PER_PAGE, max(1, (int) ($data['per_page'] ?? 20)));
         $this->search = trim((string) ($data['search'] ?? ''));
         $this->categorySlug = ($data['category'] ?? '') !== '' ? trim((string) $data['category']) : null;
         $this->categoryId = isset($data['category_id']) && $data['category_id'] !== ''
@@ -43,7 +47,7 @@ readonly class PublicReadCollectionItemRequestDTO extends BaseRequestDTO
     {
         return [
             'locale' => 'required|regex_match[/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i]',
-            'page' => 'permit_empty|is_natural_no_zero',
+            'page' => 'permit_empty|is_natural_no_zero|less_than[10001]',
             'per_page' => 'permit_empty|is_natural_no_zero|less_than[101]',
             'search' => 'permit_empty|string|max_length[120]',
             'category' => 'permit_empty|string|max_length[120]',

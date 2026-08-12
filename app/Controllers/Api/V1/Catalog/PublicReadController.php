@@ -31,7 +31,7 @@ final class PublicReadController extends ApiController
         'gallery_images', 'collection_number', 'collection_group',
         'physical_description', 'dimensions', 'ingress_type', 'donated_by',
         'tags', 'links', 'company_history', 'localized', 'translations',
-        'slug', 'slugs', 'techniques', 'created_at', 'updated_at',
+        'slug', 'slugs', 'category', 'techniques', 'created_at', 'updated_at',
     ];
 
     private PublicReadCollectionItemReaderInterface $reader;
