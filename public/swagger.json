@@ -477,6 +477,7 @@
                         "in": "query",
                         "schema": {
                             "type": "integer",
+                            "maximum": 10000,
                             "minimum": 1
                         }
                     },
@@ -493,41 +494,47 @@
                         "name": "search",
                         "in": "query",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "maxLength": 120
                         }
                     },
                     {
                         "name": "category",
                         "in": "query",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "maxLength": 120
                         }
                     },
                     {
                         "name": "category_id",
                         "in": "query",
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "minimum": 1
                         }
                     },
                     {
                         "name": "technique",
                         "in": "query",
-                        "description": "Comma-separated technique slugs",
+                        "description": "Comma-separated non-deleted technique slugs; matches any slug",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "maxLength": 500
                         }
                     },
                     {
                         "name": "technique_id",
                         "in": "query",
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "minimum": 1
                         }
                     },
                     {
                         "name": "sort",
                         "in": "query",
+                        "description": "Ascending order; ties are resolved by id ascending",
                         "schema": {
                             "type": "string",
                             "enum": [
@@ -540,6 +547,7 @@
                     {
                         "name": "fields",
                         "in": "query",
+                        "description": "Comma-separated sparse top-level fields. Omit for the complete projection.",
                         "schema": {
                             "type": "string"
                         }
@@ -597,6 +605,7 @@
                     {
                         "name": "fields",
                         "in": "query",
+                        "description": "Comma-separated sparse top-level fields, including category and techniques relations.",
                         "schema": {
                             "type": "string"
                         }
@@ -999,6 +1008,7 @@
                         "nullable": true
                     },
                     "meta": {
+                        "description": "source_revision is a stable hash of the delivered publication projection and selected query/fieldset; it is not a global database revision.",
                         "type": "object"
                     },
                     "source": {

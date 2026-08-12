@@ -15,7 +15,11 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'version', type: 'integer', example: 1),
         new OA\Property(property: 'ok', type: 'boolean'),
         new OA\Property(property: 'data', nullable: true),
-        new OA\Property(property: 'meta', type: 'object'),
+        new OA\Property(
+            property: 'meta',
+            type: 'object',
+            description: 'source_revision is a stable hash of the delivered publication projection and selected query/fieldset; it is not a global database revision.',
+        ),
         new OA\Property(
             property: 'source',
             type: 'object',

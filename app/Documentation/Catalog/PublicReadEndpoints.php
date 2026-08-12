@@ -16,15 +16,15 @@ final class PublicReadEndpoints
         security: [['appKeyAuth' => []]],
         parameters: [
             new OA\Parameter(name: 'locale', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1)),
+            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 10000)),
             new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100)),
-            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'category', in: 'query', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'category_id', in: 'query', schema: new OA\Schema(type: 'integer')),
-            new OA\Parameter(name: 'technique', in: 'query', description: 'Comma-separated technique slugs', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'technique_id', in: 'query', schema: new OA\Schema(type: 'integer')),
-            new OA\Parameter(name: 'sort', in: 'query', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at', 'id'])),
-            new OA\Parameter(name: 'fields', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string', maxLength: 120)),
+            new OA\Parameter(name: 'category', in: 'query', schema: new OA\Schema(type: 'string', maxLength: 120)),
+            new OA\Parameter(name: 'category_id', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1)),
+            new OA\Parameter(name: 'technique', in: 'query', description: 'Comma-separated non-deleted technique slugs; matches any slug', schema: new OA\Schema(type: 'string', maxLength: 500)),
+            new OA\Parameter(name: 'technique_id', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1)),
+            new OA\Parameter(name: 'sort', in: 'query', description: 'Ascending order; ties are resolved by id ascending', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at', 'id'])),
+            new OA\Parameter(name: 'fields', in: 'query', description: 'Comma-separated sparse top-level fields. Omit for the complete projection.', schema: new OA\Schema(type: 'string')),
         ],
         responses: [
             new OA\Response(
@@ -48,7 +48,7 @@ final class PublicReadEndpoints
         parameters: [
             new OA\Parameter(name: 'locale', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'idOrSlug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'fields', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'fields', in: 'query', description: 'Comma-separated sparse top-level fields, including category and techniques relations.', schema: new OA\Schema(type: 'string')),
         ],
         responses: [
             new OA\Response(
