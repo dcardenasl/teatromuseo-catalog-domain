@@ -6,6 +6,37 @@
 
 ## ✅ Completadas
 
+- [x] **PERF-03 — Retirar el N+1 de `PublicCollectionItemController::index()`
+  y la ruta `GET public/catalog/collection-items`** — cerrada 2026-08-13,
+  ejecutando §2.5/§2.F de
+  [`../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md`](../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md).
+  Verificado (agente de investigación dedicado): el `foreach` de `index()`
+  llamaba `CollectionItemMediaResolutionService::resolveMediaFields()` por
+  ítem (una llamada HTTP al Hub por ítem); cero consumidores en
+  teatromuseo-web/bff/admin/totem confirmado también por timing de logs
+  reales (`teatromuseo-web` migró el 2026-08-10, logs posteriores muestran
+  0 hits a la ruta legacy). Cero tests cubrían `index()` (los 5 tests de
+  `PublicCollectionItemControllerTest` golpean solo `show()`, que queda
+  intacto — no era el patrón N+1 auditado, aunque también carece de
+  consumidores confirmados; decisión explícita de no expandir el alcance).
+  `CollectionItemMediaResolutionService` se conserva (sigue en uso por
+  `show()`). Verificado: 272/272 tests, PHPStan 0 errores, CS-Fixer limpio,
+  swagger.json regenerado.
+
+- [x] **PERF-02 — Evaluar con EXPLAIN si falta índice compuesto para
+  category_id/technique_id** — cerrada 2026-08-13. Pedido explícito de David,
+  ejecutando §2.D de
+  [`../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md`](../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md).
+  `testFiltersSearchAndOrdersStayWithinTheReadBudget` solo tenía un fixture
+  de 1 fila (sin señal real de selectividad); se agregó
+  `testCategoryFilteredListingUsesAnIndexAtRealisticVolume` con 600 filas
+  repartidas en 5 categorías (~20% selectividad). Medido: MySQL ya usa
+  `collection_items_category_id_foreign` (el índice implícito de la FK,
+  `type=ref`, sin full scan) de forma eficiente para ese filtro — no se
+  agregó ningún índice nuevo, decisión basada en la medición, no por simetría
+  con el índice agregado en event-domain (PERF-02 de ese repo). Verificado:
+  272/272 tests, PHPStan 0 errores, CS-Fixer limpio.
+
 - [x] **ADM-DASH-02 — Read model acotado para el dashboard Admin** — cerrada
   2026-08-11. Endpoint autenticado y permission-aware con conteos y actividad
   reciente bounded para colección, categorías y técnicas; contrato, OpenAPI y
