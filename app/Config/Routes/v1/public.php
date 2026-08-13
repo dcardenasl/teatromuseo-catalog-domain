@@ -12,6 +12,11 @@ $routes->group('public/catalog', ['namespace' => '\App\Controllers\Api\V1\Catalo
     $routes->get('techniques/(:any)', 'PublicTechniqueController::show/$1');
 
     // Collection Items
-    $routes->get('collection-items', 'PublicCollectionItemController::index');
+    // `GET public/catalog/collection-items` (bare listing) removed
+    // 2026-08-13 — its controller method (index()) resolved media per item
+    // in a foreach (one HTTP call to the Hub per item, no batching).
+    // teatromuseo-web migrated to public-read/{lang}/collection-items;
+    // confirmed zero remaining callers across teatromuseo-web/bff/admin/totem.
+    // See docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md §2.5/§2.F.
     $routes->get('collection-items/(:any)', 'PublicCollectionItemController::show/$1');
 });
