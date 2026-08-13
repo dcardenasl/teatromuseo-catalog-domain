@@ -195,6 +195,58 @@ final class PublicReadQueryBudgetTest extends CIUnitTestCase
         $this->assertNotSame('ALL', $listingPlan['type'] ?? null, json_encode($listingPlan));
     }
 
+    /**
+     * Regression for docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md
+     * hallazgo D: `created_at`/`updated_at` were missing from
+     * `PublicReadController::LISTING_FIELDS` even though the base listing
+     * query already selects them (`PUBLIC_COLUMNS`), causing a 500 for the
+     * exact `fields=` combination `teatromuseo-web` sends for listing cards.
+     * Confirms the fix is both functional (200, values present) and doesn't
+     * change the QA-02 query budget/index plan — the two columns are already
+     * scalar columns on `collection_items`, not a join.
+     */
+    public function testListingWithCreatedAtUpdatedAtFieldsStaysWithinBudgetAndKeepsTheIndex(): void
+    {
+        $this->createFixture();
+
+        $measurement = $this->measureGet('/api/v1/public-read/en/collection-items?fields=id,name,created_at,updated_at&per_page=24');
+        $measurement['response']->assertStatus(200);
+
+        $body = json_decode((string) $measurement['response']->getJSON(), true);
+        $this->assertArrayHasKey('created_at', $body['data'][0] ?? [], json_encode($body));
+        $this->assertArrayHasKey('updated_at', $body['data'][0] ?? [], json_encode($body));
+        $this->assertLessThanOrEqual(6, $measurement['query_count'], $this->querySummary($measurement['queries']));
+        $this->assertLessThanOrEqual(500.0, $this->totalDuration($measurement['queries']), $this->querySummary($measurement['queries']));
+
+        $listingSql = $this->findQuery($measurement['queries'], 'FROM `collection_items` `ci`');
+        $this->assertNotNull($listingSql, $this->querySummary($measurement['queries']));
+        $plan = $this->db->query('EXPLAIN ' . $listingSql)->getResultArray();
+        $listingPlan = $this->findPlanRow($plan, 'ci');
+        $this->assertNotNull($listingPlan, json_encode($plan, JSON_UNESCAPED_SLASHES));
+        $this->assertSame('idx_collection_items_public_listing', $listingPlan['key'] ?? null, json_encode($listingPlan));
+        $this->assertNotSame('ALL', $listingPlan['type'] ?? null, json_encode($listingPlan));
+    }
+
+    /**
+     * Regression for docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md
+     * hallazgo C: an invalid `?fields=` value used to bubble up as a plain
+     * \InvalidArgumentException, which ExceptionFormatter cannot map to a
+     * status code and falls back to 500 — contradicting the OpenAPI contract
+     * (`422 — Invalid query`, already documented for this route). It must
+     * come back as 422 with a structured `errors` payload, not 500.
+     */
+    public function testInvalidFieldsParamReturns422WithStructuredErrorsNot500(): void
+    {
+        $this->createFixture();
+
+        $measurement = $this->measureGet('/api/v1/public-read/en/collection-items?fields=id,not_a_real_field');
+        $measurement['response']->assertStatus(422);
+
+        $body = json_decode((string) $measurement['response']->getJSON(), true);
+        $this->assertSame('error', $body['status'] ?? null, json_encode($body));
+        $this->assertSame(['not_a_real_field'], $body['errors']['fields'] ?? null, json_encode($body));
+    }
+
     public function testDetailFullProjectionStaysSetBasedAndExplainable(): void
     {
         $fixture = $this->createFixture();

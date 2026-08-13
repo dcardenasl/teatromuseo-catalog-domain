@@ -21,6 +21,7 @@ final class PublicReadController extends ApiController
     private const LISTING_FIELDS = [
         'id', 'name', 'category_id', 'inventory_code', 'status', 'summary',
         'cover_file_id', 'cover_image', 'slug', 'localized', 'category',
+        'created_at', 'updated_at',
     ];
 
     /** @var list<string> */

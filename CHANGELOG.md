@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`PublicReadController::LISTING_FIELDS`** — added `created_at`/`updated_at`, mirroring
+  `DETAIL_FIELDS`; the listing query already selected them, so requesting them via `?fields=` was
+  returning a 500 instead of the data `teatromuseo-web` needs for listing cards.
 - **Deterministic catalog slugs** — localized transliteration now has a stable fallback, and the
   Excel importer reuses the shared slug generator for consistent identifiers.
 
