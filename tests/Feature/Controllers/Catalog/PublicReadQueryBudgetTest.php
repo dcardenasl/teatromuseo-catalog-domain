@@ -130,6 +130,71 @@ final class PublicReadQueryBudgetTest extends CIUnitTestCase
         $this->assertNotSame('ALL', $listingPlan['type'] ?? null, json_encode($listingPlan));
     }
 
+    /**
+     * Regression for docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md
+     * §2.D/§1.6: `testFiltersSearchAndOrdersStayWithinTheReadBudget` only
+     * exercises a 1-item fixture, which gives no real EXPLAIN signal on
+     * whether category_id/technique_id filtering needs its own composite —
+     * with 1 row, any plan "works". This builds a volumetric, multi-category
+     * fixture (mirroring testListingKeepsAStableQueryBudgetAndUsesThePublicIndex's
+     * 600-row scale) and inspects the actual plan MySQL chooses for a
+     * minority-selectivity category_id filter, deciding on the evidence
+     * rather than adding an index "by symmetry" with event-domain.
+     */
+    public function testCategoryFilteredListingUsesAnIndexAtRealisticVolume(): void
+    {
+        $categoryIds = [];
+        for ($c = 0; $c < 5; $c++) {
+            $this->db->table('categories')->insert([
+                'name' => 'QA-D category ' . $c,
+                'slug' => 'qa-d-category-' . $c,
+                'short_description' => 'QA-D fixture',
+                'sort_order' => $c,
+            ]);
+            $categoryIds[] = (int) $this->db->insertID();
+        }
+
+        $items = [];
+        for ($index = 0; $index < 600; $index++) {
+            $items[] = [
+                'name' => sprintf('qa-d-item-%04d', $index),
+                'category_id' => $categoryIds[$index % 5],
+                'inventory_code' => sprintf('QAD-%04d', $index),
+                'status' => 'published',
+                'summary' => 'QA-D fixture',
+                'show_in_totem' => 0,
+                'is_active' => 1,
+                'created_at' => '2026-08-10 12:00:00',
+                'updated_at' => '2026-08-10 12:00:00',
+            ];
+        }
+        $this->db->table('collection_items')->insertBatch($items);
+
+        // Filtering by one of 5 categories is ~20% selectivity — enough for
+        // the optimizer to meaningfully prefer an index over a scan, unlike
+        // the 1-row fixture in testFiltersSearchAndOrdersStayWithinTheReadBudget.
+        $targetCategoryId = $categoryIds[2];
+        $measurement = $this->measureGet(
+            '/api/v1/public-read/es/collection-items?category_id=' . $targetCategoryId . '&fields=id,name&sort=name&per_page=24'
+        );
+        $measurement['response']->assertStatus(200);
+
+        $body = json_decode((string) $measurement['response']->getJSON(), true);
+        $this->assertSame(120, $body['meta']['total'] ?? null, json_encode($body));
+
+        $listingSql = $this->findQuery($measurement['queries'], 'FROM `collection_items` `ci`');
+        $this->assertNotNull($listingSql, $this->querySummary($measurement['queries']));
+        $plan = $this->db->query('EXPLAIN ' . $listingSql)->getResultArray();
+        $listingPlan = $this->findPlanRow($plan, 'ci');
+        $this->assertNotNull($listingPlan, json_encode($plan, JSON_UNESCAPED_SLASHES));
+
+        // Evidence, not assumption: log the chosen plan so a future reader
+        // can see what justified the (non-)decision below, the same way
+        // QA-02's original EXPLAIN runs are documented in
+        // docs/audits/2026-08-10-qa-02-explain-indexes.md.
+        $this->assertNotSame('ALL', $listingPlan['type'] ?? null, json_encode($listingPlan));
+    }
+
     public function testDetailFullProjectionStaysSetBasedAndExplainable(): void
     {
         $fixture = $this->createFixture();
