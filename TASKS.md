@@ -6,6 +6,26 @@
 
 ## ✅ Completadas
 
+- [x] **QA-05 — `LISTING_FIELDS` sin `created_at`/`updated_at` (500 en vez de datos)** —
+  cerrada 2026-08-13, ejecutando la Fase 0 de
+  [`../docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md`](../docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md)
+  (hallazgos C y D). `PublicReadController::LISTING_FIELDS` omitía `created_at`/`updated_at` aunque
+  `DETAIL_FIELDS` ya los expone y `PUBLIC_COLUMNS`/`columnsFor()` en
+  `PublicReadCollectionItemReader` ya los seleccionaba — no hacía falta tocar el `SELECT`, solo
+  espejar el allowlist del controlador. Combinado con el fix de librería (`CORE-026` en
+  `ci4-api-core`, que este repo consume vía symlink de path repo), la misma combinación de
+  `fields=` que `teatromuseo-web` construye para las tarjetas de listado pasó de `500` genérico a
+  `200` con los dos campos, y un campo realmente inválido pasa de `500` a `422` estructurado.
+  Verificado con dos tests Feature nuevos en `PublicReadQueryBudgetTest.php`
+  (`testListingWithCreatedAtUpdatedAtFieldsStaysWithinBudgetAndKeepsTheIndex` — confirma que sumar
+  las dos columnas escalares no cambia el plan de `EXPLAIN` ni el presupuesto de `QA-02`, sigue
+  usando `idx_collection_items_public_listing`; `testInvalidFieldsParamReturns422WithStructuredErrorsNot500`)
+  y con `curl` real contra el servidor local en :8191 (200 y 422 confirmados). 274/274 tests,
+  PHPStan 0 errores, CS-Fixer limpio, `swagger.json` regenerado sin diff (el contrato ya documentaba
+  `422 — Invalid query`, no había un enum de campos que actualizar). `event-domain` no requería
+  cambio de allowlist (sin gap funcional hoy) — confirmado con curl real contra :8193 que también
+  pasó de 500 a 422 estructurado gracias solo al fix de `ci4-api-core`.
+
 - [x] **PERF-03 — Retirar el N+1 de `PublicCollectionItemController::index()`
   y la ruta `GET public/catalog/collection-items`** — cerrada 2026-08-13,
   ejecutando §2.5/§2.F de
