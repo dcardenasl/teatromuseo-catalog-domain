@@ -6,6 +6,15 @@
 
 ## ✅ Completadas
 
+- [x] **WEB-BFF-03-GATE — Reparar el adaptador PublicRead de Catalog para el
+  rollout BFF.** El adaptador ya no instancia el DTO Composer compartido sin
+  validación: recibe `RequestDtoFactory` por DI y lo usa para construir el
+  `PublicReadCollectionItemRequestDTO` compartido. El wiring de
+  `CatalogDomainServices` quedó alineado. Verificado contra MySQL y HTTP real:
+  listado `200` vacío, validación `422`, 404 de detalle y respuesta normalizada
+  del listado idéntica byte a byte al BFF. `CAT-PR-03` completó el retiro Fase 3
+  después de la verificación de estabilidad; el BFF queda como dueño único.
+
 - [x] **QA-05 — `LISTING_FIELDS` sin `created_at`/`updated_at` (500 en vez de datos)** —
   cerrada 2026-08-13, ejecutando la Fase 0 de
   [`../docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md`](../docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md)
@@ -75,6 +84,16 @@
 - [x] **QA-04 — Paridad y shadow comparison** — cerrada 2026-08-10 como tarea
   raíz cross-repo; evidencia en
   [`../docs/audits/2026-08-10-qa-04-paridad-shadow.md`](../docs/audits/2026-08-10-qa-04-paridad-shadow.md).
+- [x] **CAT-PR-03 — Retirar el HTTP público propio** — cerrada 2026-08-14
+  tras cinco iteraciones estables del BFF/Web (`/ready`, CMS entries, Catalog,
+  Events y cuatro páginas Web, todas `200`). Se retiraron las rutas
+  `public-read/*` y `public/catalog/categories`, sus controladores, adaptadores,
+  DTOs, contratos OpenAPI y tests específicos; se conservaron técnicas y
+  detalle de colección legacy, que no forman parte de este retiro. Se quitaron
+  las dependencias Composer de lectura pública y se regeneró el lock. Las
+  carpetas físicas de `ci4-platform/` quedan intactas por el gate cross-repo.
+  Quality verde: 250 tests, 625 assertions, 1 skipped; PHPStan 0 errores y
+  Swagger actualizado.
 
 ## 🔴 En progreso
 
@@ -83,6 +102,36 @@
 
 ## 🟡 Próximo
 
+### BFF de lectura directa (2026-08-13) — ver `../docs/plan/2026-08-13-plan-bff-completo.md`
+
+No cambia el comportamiento propio de este repo cuando actúa por su cuenta
+(sigue usando `HttpFileMetaResolver`, sin cambios de contrato con el Hub); la
+lectura migrada ahora vive exclusivamente en el BFF.
+
+> ⚠️ **`CAT-PR-01..02` (abajo) se completaron bajo un diseño que el plan ya no
+> usa** — proponían extraer/refactorizar la clase hacia un paquete Composer
+> compartido (`teatromuseo-catalog-public-read` en `ci4-platform/`). Revisión
+> de diseño 2026-08-13 (decisión #5 del plan): con un solo consumidor final
+> (el BFF), un paquete no aporta nada — el BFF escribe su propia
+> implementación en `teatromuseo-bff/app/PublicRead/Catalog/`, usando el
+> código de este repo como referencia de lectura, no como dependencia. No se
+> pierde el análisis hecho aquí, pero **no dejes ese paquete/`repositories`
+> como si fuera parte del diseño final**; ver `CAT-PR-03`, que lo limpia.
+
+- [x] **CAT-PR-01 — Crear `teatromuseo-catalog-public-read`.** Mover
+  `PublicReadCollectionItemReader` (ya `BaseConnection`-only) al paquete
+  nuevo en `ci4-platform/`, consumido por este repo vía path-repo (ya declara
+  el bloque `repositories` hacia `ci4-api-core` — extenderlo con el paquete
+  nuevo). `catalog_public_slugs` se mueve tal cual, sin cambios de lógica.
+- [x] **CAT-PR-02 — Refactor a `FileMetaResolverInterface` inyectado.**
+  `PublicReadCollectionItemReader` hoy depende de `HubClient` concreto para
+  resolver media (`resolvePublicFileMeta()`). Cambiar el constructor para
+  recibir `FileMetaResolverInterface` (nueva, en `ci4-public-read-core`) en
+  vez de `HubClient` — inversión de dependencia limpia. Este repo sigue
+  inyectando `HttpFileMetaResolver` (envuelve el `HubClient` actual, cero
+  cambio de comportamiento propio); el BFF inyectará `DirectDbFileMetaResolver`.
+  Depende de que `ci4-public-read-core` (paquete compartido, ver
+  `teatromuseo-bff/TASKS.md` BFF-DB-01/02) ya exista.
 ### Plan vigente — PublicRead/PageDelivery/Snapshots (2026-08-09)
 
 `PUB-00`, `PUB-01/02`, `CAT-01..03`, `SHARED-01` y `CACHE-03` están cerradas
