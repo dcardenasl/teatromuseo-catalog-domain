@@ -25,7 +25,7 @@ final class ThrottleFilterTest extends CIUnitTestCase
 {
     public function testPublicReadsUseTheTrustedAppKeyBucket(): void
     {
-        $request = $this->makeRequest('/api/v1/public/catalog/categories', 'web-key');
+        $request = $this->makeRequest('/api/v1/public/catalog/techniques', 'web-key');
         $buckets = (new InspectableThrottleFilter())->buckets($request);
 
         $this->assertCount(1, $buckets);
@@ -36,7 +36,7 @@ final class ThrottleFilterTest extends CIUnitTestCase
 
     public function testPublicWritesKeepTheInheritedIpBucket(): void
     {
-        $request = $this->makeRequest('/api/v1/public/catalog/categories', 'web-key', 'POST');
+        $request = $this->makeRequest('/api/v1/public/catalog/techniques', 'web-key', 'POST');
         $buckets = (new InspectableThrottleFilter())->buckets($request);
 
         $this->assertCount(1, $buckets);

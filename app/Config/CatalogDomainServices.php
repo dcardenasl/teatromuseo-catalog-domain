@@ -51,19 +51,6 @@ trait CatalogDomainServices
         return new \App\Services\Admin\DashboardSummaryService(static::dashboardSummaryRepository());
     }
 
-    public static function publicReadCollectionItemReader(bool $getShared = true): \App\Interfaces\Catalog\PublicReadCollectionItemReaderInterface
-    {
-        if ($getShared) {
-            return static::getSharedInstance('publicReadCollectionItemReader');
-        }
-
-        return new \App\Services\Catalog\PublicReadCollectionItemReader(
-            \Config\Database::connect(),
-            static::hubClient(),
-            (string) config('Localization')->legacyFallbackLocale,
-        );
-    }
-
     /**
      * Shared per-request locale resolver.
      *
