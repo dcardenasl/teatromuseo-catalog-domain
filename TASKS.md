@@ -91,7 +91,8 @@
   DTOs, contratos OpenAPI y tests específicos; se conservaron técnicas y
   detalle de colección legacy, que no forman parte de este retiro. Se quitaron
   las dependencias Composer de lectura pública y se regeneró el lock. Las
-  carpetas físicas de `ci4-platform/` quedan intactas por el gate cross-repo.
+  carpetas físicas superseded se eliminaron después en `PKG-CLEANUP-01`, una
+  vez retiradas todas las declaraciones cross-repo.
   Quality verde: 250 tests, 625 assertions, 1 skipped; PHPStan 0 errores y
   Swagger actualizado.
 
