@@ -7,6 +7,7 @@ $routes->group('catalog', ['namespace' => '\App\Controllers\Api\V1\Catalog'], fu
     // Auth & Admin Protected Group
     $routes->group('', ['filter' => ['domainauth', 'throttle']], function ($routes): void {
         $routes->get('dashboard/summary', 'DashboardSummaryController::index');
+        $routes->post('sort-orders', 'SortOrderController::reorder');
 
         // Resource routes will be injected here
         $routes->group('', ['filter' => 'permission:catalog.category.read'], function ($routes): void {

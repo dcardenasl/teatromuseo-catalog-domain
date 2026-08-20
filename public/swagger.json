@@ -379,6 +379,36 @@
                 ]
             }
         },
+        "/api/v1/catalog/sort-orders": {
+            "post": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Reorder a bounded catalog resource in one operation",
+                "operationId": "7fd8e1878d4de33ea86afe4cdaf05249",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CatalogSortOrderBatchRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order saved successfully"
+                    },
+                    "403": {
+                        "description": "Insufficient permissions"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
         "/api/v1/catalog/techniques": {
             "get": {
                 "tags": [
@@ -1080,6 +1110,42 @@
                             "type": "object"
                         },
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CatalogSortOrderBatchRequest": {
+                "properties": {
+                    "items": {
+                        "description": "Rows to reorder. IDs must be unique.",
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "id",
+                                "sort_order"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "sort_order": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "maxItems": 500,
+                        "minItems": 1
+                    },
+                    "resource": {
+                        "description": "Catalog resource to reorder.",
+                        "type": "string",
+                        "enum": [
+                            "categories",
+                            "techniques"
+                        ]
                     }
                 },
                 "type": "object"
