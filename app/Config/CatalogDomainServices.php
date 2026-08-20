@@ -6,6 +6,18 @@ namespace Config;
 
 trait CatalogDomainServices
 {
+    public static function sortOrderBatchService(bool $getShared = true): \App\Services\Catalog\SortOrderBatchService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('sortOrderBatchService');
+        }
+
+        return new \App\Services\Catalog\SortOrderBatchService(
+            \Config\Database::connect(),
+            static::publicCacheInvalidationNotifier(),
+        );
+    }
+
     public static function categoryListRepository(bool $getShared = true): \App\Interfaces\Catalog\AdminListProjectionRepositoryInterface
     {
         if ($getShared) {
