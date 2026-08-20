@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`POST /api/v1/catalog/sort-orders`** — atomic batch reorder for categories and
+  techniques (up to 500 rows per request), replacing the Admin's per-row HTTP
+  loop with one transactional `CASE`-based update gated by the resource's
+  existing write permission.
 - **`/api/v1/public-read/{locale}/collection-items` endpoints** — versioned envelope read model
   for public collection-item listing/detail, backed by a set-based query and batched Hub media
   resolution, gated by a dedicated public-read throttle bucket.
