@@ -1,15 +1,15 @@
 version: '3.8'
 
 services:
-  # CodeIgniter 4 API Application
+  # CodeIgniter 4 Catalog Domain application
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ci4-api-app
+    container_name: ci4-catalog-domain-app
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8191:80"
     environment:
       - CI_ENVIRONMENT=${CI_ENVIRONMENT:-development}
       - database.default.hostname=db
@@ -40,7 +40,7 @@ services:
   # MySQL Database
   db:
     image: mysql:8.0
-    container_name: ci4-api-db
+    container_name: ci4-catalog-domain-db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -48,7 +48,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-ci4_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3307:3306"
+      - "3309:3306"
     volumes:
       # Persist database data
       - mysql-data:/var/lib/mysql
@@ -65,10 +65,10 @@ services:
   # phpMyAdmin (optional, for database management)
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: ci4-api-phpmyadmin
+    container_name: ci4-catalog-domain-phpmyadmin
     restart: unless-stopped
     ports:
-      - "8081:80"
+      - "8192:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
@@ -86,8 +86,8 @@ services:
 networks:
   ci4-network:
     driver: bridge
-    name: ci4-api-network
+    name: ci4-catalog-domain-network
 
 volumes:
   mysql-data:
-    name: ci4-mysql-data
+    name: ci4-catalog-domain-mysql-data

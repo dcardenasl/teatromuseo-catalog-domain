@@ -21,11 +21,14 @@ RUN composer dump-autoload --optimize --no-dev
 # Stage 2: Production image
 FROM php:8.2-apache
 
-LABEL maintainer="CodeIgniter 4 API Starter"
-LABEL description="Production-ready CI4 API with JWT authentication"
+LABEL maintainer="Teatro Museo"
+LABEL description="Production-ready Teatro Museo catalog domain API"
 
-# Install system deps, PHP extensions, and enable Apache modules in one layer
+# Install system deps, PHP extensions, and enable Apache modules in one layer.
+# Upgrade the base image packages before installing runtime dependencies so a
+# rebuild receives security fixes released after the PHP image was published.
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         git \
         curl \

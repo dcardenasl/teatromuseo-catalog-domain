@@ -257,11 +257,11 @@ if [ "$SKIP_SERVER" = false ]; then
   case "$(echo "$START_SERVER" | tr '[:upper:]' '[:lower:]')" in
     y|yes)
       print_header "Starting development server"
-      printf "Server at http://localhost:8190 — press Ctrl+C to stop.\n\n"
-      php spark serve --port 8190
+      printf "Server at http://localhost:8191 — press Ctrl+C to stop.\n\n"
+      php spark serve --port 8191
       ;;
     *)
-      printf "Start server: php spark serve --port 8190\n"
+      printf "Start server: php spark serve --port 8191\n"
       ;;
   esac
 fi

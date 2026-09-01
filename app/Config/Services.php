@@ -7,7 +7,7 @@ namespace Config;
 use CodeIgniter\Config\BaseService;
 
 require_once __DIR__ . '/ApiCoreServices.php';
-require_once __DIR__ . '/ExampleDomainServices.php';
+require_once __DIR__ . '/CatalogDomainServices.php';
 require_once __DIR__ . '/SystemMonitoringServices.php';
 require_once __DIR__ . '/RepositoryModelServices.php';
 
@@ -17,9 +17,21 @@ require_once __DIR__ . '/RepositoryModelServices.php';
 class Services extends BaseService
 {
     use ApiCoreServices;
-    use ExampleDomainServices;
+    use CatalogDomainServices;
     use SystemMonitoringServices;
     use RepositoryModelServices;
+
+    public static function publicReadDiagnostics(bool $getShared = true): \App\Services\PublicReadDiagnosticsService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('publicReadDiagnostics');
+        }
+
+        return new \App\Services\PublicReadDiagnosticsService(
+            \Config\Database::connect(),
+            \Config\Services::cache(),
+        );
+    }
 
     public static function hubClient(bool $getShared = true): \App\Libraries\Hub\HubClient
     {

@@ -52,6 +52,9 @@ class Filters extends BaseFilters
         'idempotency'        => \dcardenasl\Ci4ApiCore\Http\Filters\IdempotencyFilter::class,
         'correlationid'      => \dcardenasl\Ci4ApiCore\Http\Filters\CorrelationIdFilter::class,
         'maintenance'        => \dcardenasl\Ci4ApiCore\Http\Filters\MaintenanceFilter::class,
+        'webappkey'          => \App\Filters\WebAppKeyRequiredFilter::class,
+        'hubsignature'       => \App\Filters\HubSignatureFilter::class,
+        'publicTelemetry'    => \App\Filters\PublicReadTelemetryFilter::class,
     ];
 
     /**
@@ -76,6 +79,7 @@ class Filters extends BaseFilters
         'before' => [
             'maintenance',
             'correlationid',
+            'publicTelemetry',
             'locale',
             'cors',
             'invalidchars',
@@ -85,6 +89,7 @@ class Filters extends BaseFilters
             'secureheaders',
             'deprecationheaders',
             'correlationid',
+            'publicTelemetry',
             'requestLogging' => ['except' => ['health', 'ping', 'ready', 'live']],
         ],
     ];

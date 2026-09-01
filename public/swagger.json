@@ -1,0 +1,1752 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "CodeIgniter 4 Domain Starter",
+        "description": "CodeIgniter 4 domain app starter that delegates authentication and IAM to a central hub.",
+        "version": "1.2.1"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8180",
+            "description": "Local development server"
+        }
+    ],
+    "paths": {
+        "/api/v1/catalog/categories": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "List Categories",
+                "operationId": "a03822c84475733c06e467e1b3fceae1",
+                "responses": {
+                    "200": {
+                        "description": "List retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CategoryResponse"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Create new Category",
+                "operationId": "c79caf102430a85045b55540c9188a5e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryCreateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog/categories/{id}": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get Category by ID",
+                "operationId": "3c95cfbba58c21c8198ec00fd6b7cdbf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Update existing Category",
+                "operationId": "54f98b3f54585eeb7e77da6861dd7359",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Delete Category by ID",
+                "operationId": "d929d83fd801c50f65c2219e018d2642",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog/collection-items": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "List CollectionItems",
+                "operationId": "e3bbf6bf87a7b55e5cc642bd85beda72",
+                "responses": {
+                    "200": {
+                        "description": "List retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CollectionItemResponse"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Create new CollectionItem",
+                "operationId": "b02d3b883c41cf945ee88fe146bba259",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CollectionItemCreateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog/collection-items/{id}": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get CollectionItem by ID",
+                "operationId": "ba3b27dfba4576517db3bb37fd12971c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CollectionItemResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Update existing CollectionItem",
+                "operationId": "735569586b3eb2514d0f3867758ef497",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CollectionItemUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CollectionItemResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Delete CollectionItem by ID",
+                "operationId": "b93c816a43d5757175ae51c07aea574b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/public/catalog/collection-items/{idOrSlug}": {
+            "get": {
+                "tags": [
+                    "Public Catalog"
+                ],
+                "summary": "Get an active collection item by id, inventory code, or per-locale routing slug",
+                "description": "Slug resolution prefers the Accept-Language locale and falls back to any locale, so shared URLs keep working across languages.",
+                "operationId": "3da74da2c966dc9430ed1600721adefd",
+                "parameters": [
+                    {
+                        "name": "idOrSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CollectionItemResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid X-App-Key"
+                    },
+                    "404": {
+                        "description": "Not found or inactive"
+                    }
+                },
+                "security": [
+                    {
+                        "appKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/catalog/sort-orders": {
+            "post": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Reorder a bounded catalog resource in one operation",
+                "operationId": "7fd8e1878d4de33ea86afe4cdaf05249",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CatalogSortOrderBatchRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order saved successfully"
+                    },
+                    "403": {
+                        "description": "Insufficient permissions"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog/techniques": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "List Techniques",
+                "operationId": "252b7feb90ce3471dbcb7fa5ca5d6c78",
+                "responses": {
+                    "200": {
+                        "description": "List retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TechniqueResponse"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Create new Technique",
+                "operationId": "120977a9c12c07e7f08e756c8fca71d3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TechniqueCreateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog/techniques/{id}": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get Technique by ID",
+                "operationId": "ec07f96968c97eea96ee1f699063112f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TechniqueResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Update existing Technique",
+                "operationId": "15cfbd084159ad879289d9222a9a29b0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TechniqueUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TechniqueResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Delete Technique by ID",
+                "operationId": "42bf5fde9afde8bf6c201764f706e190",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/diagnostics/public-read": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Public-read capacity diagnostics",
+                "description": "Internal application diagnostics. Requires the X-App-Key header and never returns credentials or SQL text.",
+                "operationId": "458fd0fd6b45a531a83dc31176002334",
+                "responses": {
+                    "200": {
+                        "description": "Diagnostics collected",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "schema": {
+                                            "type": "string",
+                                            "example": "public-read-diagnostics.v1"
+                                        },
+                                        "generated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "application": {
+                                            "type": "object"
+                                        },
+                                        "database": {
+                                            "type": "object"
+                                        },
+                                        "cache": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid X-App-Key"
+                    }
+                },
+                "security": [
+                    {
+                        "appKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/health": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check",
+                "operationId": "8134f87e7bbe4107dc228a3b8d62d619",
+                "responses": {
+                    "200": {
+                        "description": "System healthy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "healthy"
+                                        },
+                                        "timestamp": {
+                                            "type": "string"
+                                        },
+                                        "checks": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "System unhealthy or monitoring disabled"
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Ping",
+                "operationId": "dbed0a220ea82e65e99701b5a0827c7e",
+                "responses": {
+                    "200": {
+                        "description": "Service reachable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "timestamp": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ready": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Readiness check",
+                "operationId": "e5d2e3dea8c7b5d8c0113dce7beb0d09",
+                "responses": {
+                    "200": {
+                        "description": "Ready to serve",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ready"
+                                        },
+                                        "timestamp": {
+                                            "type": "string"
+                                        },
+                                        "database": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Not ready"
+                    }
+                }
+            }
+        },
+        "/live": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Liveness check",
+                "operationId": "7a050261f6e4cedb42617b378f1e1415",
+                "responses": {
+                    "200": {
+                        "description": "Service alive",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "alive"
+                                        },
+                                        "timestamp": {
+                                            "type": "string"
+                                        },
+                                        "uptime_seconds": {
+                                            "type": "integer",
+                                            "example": 12345
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CategoryCreateRequest": {
+                "properties": {
+                    "name": {
+                        "description": "name",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "description": "slug",
+                        "type": "string"
+                    },
+                    "icon": {
+                        "description": "icon",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "short_description": {
+                        "description": "short_description",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "description": "sort_order",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "Localized content rows keyed by locale code",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "CategoryIndexRequest": {},
+            "CategoryUpdateRequest": {
+                "properties": {
+                    "name": {
+                        "description": "name",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "description": "slug",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "icon": {
+                        "description": "icon",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "short_description": {
+                        "description": "short_description",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "description": "sort_order",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "Localized content rows keyed by locale code",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CollectionItemCreateRequest": {
+                "properties": {
+                    "name": {
+                        "description": "name",
+                        "type": "string"
+                    },
+                    "category_id": {
+                        "description": "category_id",
+                        "type": "integer"
+                    },
+                    "inventory_code": {
+                        "description": "inventory_code",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "description": "status",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "description": "summary",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "curiosidad": {
+                        "description": "curiosidad",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "contenido": {
+                        "description": "contenido",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "origin": {
+                        "description": "origin",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "period": {
+                        "description": "period",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "creator": {
+                        "description": "creator",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ubicacion": {
+                        "description": "ubicacion",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "materials": {
+                        "description": "materials",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cover_file_id": {
+                        "description": "cover_file_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "gallery_file_ids": {
+                        "description": "gallery_file_ids",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "show_in_totem": {
+                        "description": "show_in_totem",
+                        "type": "integer"
+                    },
+                    "internal_notes": {
+                        "description": "internal_notes",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "collection_number": {
+                        "description": "collection_number",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "collection_group": {
+                        "description": "collection_group",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "physical_description": {
+                        "description": "physical_description",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "dimensions": {
+                        "description": "dimensions",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ingress_type": {
+                        "description": "ingress_type",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "donated_by": {
+                        "description": "donated_by",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "description": "tags",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "links": {
+                        "description": "links",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "company_history": {
+                        "description": "company_history",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "description": "is_active",
+                        "type": "integer"
+                    },
+                    "translations": {
+                        "description": "Localized content rows keyed by locale code",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "CollectionItemIndexRequest": {},
+            "CollectionItemUpdateRequest": {
+                "properties": {
+                    "name": {
+                        "description": "name",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "category_id": {
+                        "description": "category_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "inventory_code": {
+                        "description": "inventory_code",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "description": "status",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "summary": {
+                        "description": "summary",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "curiosidad": {
+                        "description": "curiosidad",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "contenido": {
+                        "description": "contenido",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "origin": {
+                        "description": "origin",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "period": {
+                        "description": "period",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "creator": {
+                        "description": "creator",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ubicacion": {
+                        "description": "ubicacion",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "materials": {
+                        "description": "materials",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cover_file_id": {
+                        "description": "cover_file_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "gallery_file_ids": {
+                        "description": "gallery_file_ids",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "show_in_totem": {
+                        "description": "show_in_totem",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "internal_notes": {
+                        "description": "internal_notes",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "collection_number": {
+                        "description": "collection_number",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "collection_group": {
+                        "description": "collection_group",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "physical_description": {
+                        "description": "physical_description",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "dimensions": {
+                        "description": "dimensions",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ingress_type": {
+                        "description": "ingress_type",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "donated_by": {
+                        "description": "donated_by",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "description": "tags",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "links": {
+                        "description": "links",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "company_history": {
+                        "description": "company_history",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "description": "is_active",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "Localized content rows keyed by locale code",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CatalogSortOrderBatchRequest": {
+                "properties": {
+                    "items": {
+                        "description": "Rows to reorder. IDs must be unique.",
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "id",
+                                "sort_order"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "sort_order": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "maxItems": 500,
+                        "minItems": 1
+                    },
+                    "resource": {
+                        "description": "Catalog resource to reorder.",
+                        "type": "string",
+                        "enum": [
+                            "categories",
+                            "techniques"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "TechniqueCreateRequest": {
+                "properties": {
+                    "name": {
+                        "description": "name",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "description": "slug",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "description": "summary",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "video_url": {
+                        "description": "video_url",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "pdf_file_id": {
+                        "description": "pdf_file_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "description": "sort_order",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "Localized content rows keyed by locale code",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "TechniqueIndexRequest": {},
+            "TechniqueUpdateRequest": {
+                "properties": {
+                    "name": {
+                        "description": "name",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "description": "slug",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "summary": {
+                        "description": "summary",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "video_url": {
+                        "description": "video_url",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "pdf_file_id": {
+                        "description": "pdf_file_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "description": "sort_order",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "Localized content rows keyed by locale code",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "AuditResponse": {
+                "title": "Audit Response",
+                "description": "Audit log entry metadata",
+                "required": [
+                    "id",
+                    "action",
+                    "entity_type",
+                    "created_at"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique log identifier",
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "action": {
+                        "description": "Action performed",
+                        "type": "string",
+                        "example": "update",
+                        "enum": [
+                            "create",
+                            "update",
+                            "delete",
+                            "login_success",
+                            "login_failure"
+                        ]
+                    },
+                    "entity_type": {
+                        "description": "Affected entity type",
+                        "type": "string",
+                        "example": "users"
+                    },
+                    "entity_id": {
+                        "description": "Affected entity ID",
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "old_values": {
+                        "description": "Values before the change",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "new_values": {
+                        "description": "Values after the change",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "user_id": {
+                        "description": "ID of user who performed the action",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "user_email": {
+                        "description": "Email of user who performed the action",
+                        "type": "string",
+                        "example": "admin@example.com",
+                        "nullable": true
+                    },
+                    "user_full_name": {
+                        "description": "Full name of user who performed the action",
+                        "type": "string",
+                        "example": "Jane Doe",
+                        "nullable": true
+                    },
+                    "ip_address": {
+                        "description": "IP address of the requester",
+                        "type": "string",
+                        "example": "127.0.0.1",
+                        "nullable": true
+                    },
+                    "user_agent": {
+                        "description": "User-Agent of the requester",
+                        "type": "string",
+                        "example": "Mozilla/5.0...",
+                        "nullable": true
+                    },
+                    "result": {
+                        "description": "Execution result",
+                        "type": "string",
+                        "example": "success",
+                        "enum": [
+                            "success",
+                            "failure",
+                            "denied"
+                        ]
+                    },
+                    "severity": {
+                        "description": "Event severity",
+                        "type": "string",
+                        "example": "info",
+                        "enum": [
+                            "info",
+                            "warning",
+                            "critical"
+                        ]
+                    },
+                    "request_id": {
+                        "description": "Request correlation ID",
+                        "type": "string",
+                        "example": "req_01HZY...",
+                        "nullable": true
+                    },
+                    "metadata": {
+                        "description": "Additional sanitized metadata",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Log timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00"
+                    }
+                },
+                "type": "object"
+            },
+            "CategoryResponse": {
+                "title": "Category Response",
+                "required": [
+                    "id",
+                    "name",
+                    "slug"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "name",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "description": "slug",
+                        "type": "string"
+                    },
+                    "icon": {
+                        "description": "icon",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "short_description": {
+                        "description": "short_description",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "description": "sort_order",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "All stored localized content rows",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "localized": {
+                        "description": "Content resolved from Accept-Language with field-level fallback",
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CollectionItemResponse": {
+                "title": "CollectionItem Response",
+                "required": [
+                    "id",
+                    "name",
+                    "category_id",
+                    "status",
+                    "show_in_totem",
+                    "is_active"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "name",
+                        "type": "string"
+                    },
+                    "category_id": {
+                        "description": "category_id",
+                        "type": "integer"
+                    },
+                    "inventory_code": {
+                        "description": "inventory_code",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "description": "status",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "description": "summary",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "curiosidad": {
+                        "description": "curiosidad",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "contenido": {
+                        "description": "contenido",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "origin": {
+                        "description": "origin",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "period": {
+                        "description": "period",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "creator": {
+                        "description": "creator",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ubicacion": {
+                        "description": "ubicacion",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "materials": {
+                        "description": "materials",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cover_file_id": {
+                        "description": "cover_file_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "gallery_file_ids": {
+                        "description": "gallery_file_ids",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "show_in_totem": {
+                        "description": "show_in_totem",
+                        "type": "integer"
+                    },
+                    "internal_notes": {
+                        "description": "internal_notes",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "collection_number": {
+                        "description": "collection_number",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "collection_group": {
+                        "description": "collection_group",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "physical_description": {
+                        "description": "physical_description",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "dimensions": {
+                        "description": "dimensions",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ingress_type": {
+                        "description": "ingress_type",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "donated_by": {
+                        "description": "donated_by",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "tags": {
+                        "description": "tags",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "links": {
+                        "description": "links",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "company_history": {
+                        "description": "company_history",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "description": "is_active",
+                        "type": "integer"
+                    },
+                    "translations": {
+                        "description": "All stored localized content rows",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "localized": {
+                        "description": "Content resolved from Accept-Language with field-level fallback",
+                        "type": "object"
+                    },
+                    "slug": {
+                        "description": "Public routing slug resolved for the request locale",
+                        "type": "string"
+                    },
+                    "slugs": {
+                        "description": "Every public routing slug, keyed by locale",
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "TechniqueResponse": {
+                "title": "Technique Response",
+                "required": [
+                    "id",
+                    "name",
+                    "slug"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "name",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "description": "slug",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "description": "summary",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "video_url": {
+                        "description": "video_url",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "pdf_file_id": {
+                        "description": "pdf_file_id",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "description": "sort_order",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "translations": {
+                        "description": "All stored localized content rows",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "localized": {
+                        "description": "Content resolved from Accept-Language with field-level fallback",
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "example": "2026-02-26 12:00:00",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "responses": {
+            "UnauthorizedResponse": {
+                "description": "Unauthorized - Invalid or missing authentication token",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "status": {
+                                    "description": "Response status",
+                                    "type": "string",
+                                    "example": "error"
+                                },
+                                "message": {
+                                    "description": "Error message (localized by Accept-Language)",
+                                    "type": "string",
+                                    "example": "Unauthorized / No autorizado"
+                                },
+                                "errors": {
+                                    "description": "Error details",
+                                    "type": "object",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "ValidationErrorResponse": {
+                "description": "Validation Error - Request data failed validation",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "status": {
+                                    "description": "Response status",
+                                    "type": "string",
+                                    "example": "error"
+                                },
+                                "message": {
+                                    "description": "Main error message (localized by Accept-Language)",
+                                    "type": "string",
+                                    "example": "Validation failed / Validacion fallida"
+                                },
+                                "errors": {
+                                    "description": "Field-specific error messages (localized by Accept-Language)",
+                                    "type": "object",
+                                    "example": {
+                                        "email": "Localized validation message"
+                                    }
+                                },
+                                "code": {
+                                    "description": "Error code",
+                                    "type": "integer",
+                                    "example": 422,
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter your JWT token in the format: Bearer {token}",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            },
+            "appKeyAuth": {
+                "type": "apiKey",
+                "description": "Per-application API key issued by this server, used to authenticate the calling app (no user JWT required).",
+                "name": "X-App-Key",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Health",
+            "description": "Health and readiness endpoints"
+        },
+        {
+            "name": "Catalog",
+            "description": "Catalog"
+        },
+        {
+            "name": "Public Catalog",
+            "description": "Public Catalog"
+        }
+    ]
+}

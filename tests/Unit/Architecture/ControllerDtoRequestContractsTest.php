@@ -20,6 +20,11 @@ class ControllerDtoRequestContractsTest extends CIUnitTestCase
      */
     private const CONTROLLER_EXCEPTIONS = [
         'HealthController',
+        // Hub-initiated internal/files/* routes (usage-check, invalidate-cache).
+        // Gated by HubSignatureFilter (HMAC), not JWT/app-key — no SecurityContext
+        // to hand handleRequest(), and no client-supplied request body to
+        // validate via a DTO. Machine-to-machine, same shape as HealthController.
+        'InternalFileController',
     ];
 
     /**
@@ -28,12 +33,12 @@ class ControllerDtoRequestContractsTest extends CIUnitTestCase
     private function controllerSnippets(): array
     {
         return [
-            'app/Controllers/Api/V1/Example/ItemController.php' => [
-                "handleRequest('index', ItemIndexRequestDTO::class)",
-                "handleRequest('store', ItemCreateRequestDTO::class)",
-                "ItemUpdateRequestDTO::class",
-                "itemService->show(\$id, \$context)",
-                "itemService->destroy(\$id, \$context)",
+            'app/Controllers/Api/V1/Catalog/CollectionItemController.php' => [
+                "CollectionItemIndexRequestDTO::class",
+                "CollectionItemCreateRequestDTO::class",
+                "CollectionItemUpdateRequestDTO::class",
+                "collectionItemService->show(\$id, \$context)",
+                "collectionItemService->destroy(\$id, \$context)",
             ],
         ];
     }

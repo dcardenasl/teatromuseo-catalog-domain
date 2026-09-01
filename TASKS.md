@@ -1,95 +1,174 @@
-# TASKS — ci4-domain-starter
+# TASKS — teatromuseo-catalog-domain
 
-> Fuente de verdad para trabajo en este repo.
-> Historial de completadas: ver `TASKS_ARCHIVE.md`.
-> Cross-repo: ver `../TASKS.md`.
-> Última actualización: 2026-06-04 (DOM-109 completado — sync-permissions fail-loud + HubClient fix)
-
----
-
-## 🔴 En progreso
-
-*(vacío)*
-
----## 🟡 Próximo
-
-*(vacío)*
-
----
+> Trabajo abierto de este repositorio. Programa cross-repo:
+> [`../TASKS.md`](../TASKS.md). Cierres históricos:
+> [`TASKS_ARCHIVE.md`](TASKS_ARCHIVE.md).
 
 ## ✅ Completadas
 
-### DOM-110 — Automatización de Sync de Permisos en Desarrollo (DX)
-- Modificar `app/Commands/SyncPermissions.php` para resolver automáticamente el token de administración en local usando la DB de IAM local en desarrollo.
-- Implementar borrado automático de caché (`cache:clear`) al terminar la sincronización local.
+- [x] **WEB-BFF-03-GATE — Reparar el adaptador PublicRead de Catalog para el
+  rollout BFF.** El adaptador ya no instancia el DTO Composer compartido sin
+  validación: recibe `RequestDtoFactory` por DI y lo usa para construir el
+  `PublicReadCollectionItemRequestDTO` compartido. El wiring de
+  `CatalogDomainServices` quedó alineado. Verificado contra MySQL y HTTP real:
+  listado `200` vacío, validación `422`, 404 de detalle y respuesta normalizada
+  del listado idéntica byte a byte al BFF. `CAT-PR-03` completó el retiro Fase 3
+  después de la verificación de estabilidad; el BFF queda como dueño único.
 
-### DOM-111 — Documentación de Arquitectura de Seguridad
-- Agregar `docs/architecture/permissions.md` detallando el flujo de permisos cruzados y la caché de introspección.
+- [x] **QA-05 — `LISTING_FIELDS` sin `created_at`/`updated_at` (500 en vez de datos)** —
+  cerrada 2026-08-13, ejecutando la Fase 0 de
+  [`../docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md`](../docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md)
+  (hallazgos C y D). `PublicReadController::LISTING_FIELDS` omitía `created_at`/`updated_at` aunque
+  `DETAIL_FIELDS` ya los expone y `PUBLIC_COLUMNS`/`columnsFor()` en
+  `PublicReadCollectionItemReader` ya los seleccionaba — no hacía falta tocar el `SELECT`, solo
+  espejar el allowlist del controlador. Combinado con el fix de librería (`CORE-026` en
+  `ci4-api-core`, que este repo consume vía symlink de path repo), la misma combinación de
+  `fields=` que `teatromuseo-web` construye para las tarjetas de listado pasó de `500` genérico a
+  `200` con los dos campos, y un campo realmente inválido pasa de `500` a `422` estructurado.
+  Verificado con dos tests Feature nuevos en `PublicReadQueryBudgetTest.php`
+  (`testListingWithCreatedAtUpdatedAtFieldsStaysWithinBudgetAndKeepsTheIndex` — confirma que sumar
+  las dos columnas escalares no cambia el plan de `EXPLAIN` ni el presupuesto de `QA-02`, sigue
+  usando `idx_collection_items_public_listing`; `testInvalidFieldsParamReturns422WithStructuredErrorsNot500`)
+  y con `curl` real contra el servidor local en :8191 (200 y 422 confirmados). 274/274 tests,
+  PHPStan 0 errores, CS-Fixer limpio, `swagger.json` regenerado sin diff (el contrato ya documentaba
+  `422 — Invalid query`, no había un enum de campos que actualizar). `event-domain` no requería
+  cambio de allowlist (sin gap funcional hoy) — confirmado con curl real contra :8193 que también
+  pasó de 500 a 422 estructurado gracias solo al fix de `ci4-api-core`.
 
-### DOM-109 — `domain:sync-permissions`: fail-loud + HubClient role lookup fix (KICK-027)
-- **Qué**: (1) `HubClient::findRoleByCode` ahora parsea `{items:[...]}` en vez de `$data[0]` — el API devuelve una colección paginada, no un array plano; (2) `SyncPermissions` ahora termina con `exit≠0` cuando `--assign-to-role` está seteado pero el rol no se encontró/enlazó (`$roleLinkFailed` flag); (3) composer.lock actualizado a ci4-api-core v0.9.3 que incluye `registerPermission(3 params)` para reenviar `applicationId` correctamente; (4) tests añadidos en `HubClientTest` y `SyncPermissionsTest` para los dos behaviors corregidos.
-- **Por qué**: en el POC E2E (2026-06-03) `domain:sync-permissions --assign-to-role superadmin` reportaba éxito pero no enlazaba nada al rol: (a) `findRoleByCode` retornaba null porque intentaba `$data[0]` sobre un `{items:[...]}` paginado, y (b) la firma de 2 parámetros en la versión bloqueada de api-core descartaba el `application_id` del mirror.
-- **Verificado**: PHP lint limpio, bash -n limpio, tests pasan.
+- [x] **PERF-03 — Retirar el N+1 de `PublicCollectionItemController::index()`
+  y la ruta `GET public/catalog/collection-items`** — cerrada 2026-08-13,
+  ejecutando §2.5/§2.F de
+  [`../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md`](../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md).
+  Verificado (agente de investigación dedicado): el `foreach` de `index()`
+  llamaba `CollectionItemMediaResolutionService::resolveMediaFields()` por
+  ítem (una llamada HTTP al Hub por ítem); cero consumidores en
+  teatromuseo-web/bff/admin/totem confirmado también por timing de logs
+  reales (`teatromuseo-web` migró el 2026-08-10, logs posteriores muestran
+  0 hits a la ruta legacy). Cero tests cubrían `index()` (los 5 tests de
+  `PublicCollectionItemControllerTest` golpean solo `show()`, que queda
+  intacto — no era el patrón N+1 auditado, aunque también carece de
+  consumidores confirmados; decisión explícita de no expandir el alcance).
+  `CollectionItemMediaResolutionService` se conserva (sigue en uso por
+  `show()`). Verificado: 272/272 tests, PHPStan 0 errores, CS-Fixer limpio,
+  swagger.json regenerado.
 
-### DOM-103 — `php spark domain:doctor` diagnóstico del hub
-- **Qué**: se añadió `php spark domain:doctor` para auditar el enlace del domain starter con el hub. El comando reporta tres checks: `service-token`, `introspect` cuando se pasa `--token`, y `register-permission` cuando se pasa `--admin-token`. El probe de registro usa un payload inválido a propósito para mantenerse read-only y solo validar reachability/autenticación.
-- **Por qué**: la tarea pedía un diagnóstico operativo que ayudara a detectar problemas de conectividad y auth sin tener que lanzar manualmente varios comandos de setup.
-- **Verificado**: `vendor/bin/phpunit tests/Unit/Commands/DoctorTest.php --testdox --no-coverage` ✅ (2 tests, 17 assertions).
+- [x] **PERF-02 — Evaluar con EXPLAIN si falta índice compuesto para
+  category_id/technique_id** — cerrada 2026-08-13. Pedido explícito de David,
+  ejecutando §2.D de
+  [`../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md`](../docs/audits/2026-08-12-auditoria-parte2-rendimiento-listados-publicos.md).
+  `testFiltersSearchAndOrdersStayWithinTheReadBudget` solo tenía un fixture
+  de 1 fila (sin señal real de selectividad); se agregó
+  `testCategoryFilteredListingUsesAnIndexAtRealisticVolume` con 600 filas
+  repartidas en 5 categorías (~20% selectividad). Medido: MySQL ya usa
+  `collection_items_category_id_foreign` (el índice implícito de la FK,
+  `type=ref`, sin full scan) de forma eficiente para ese filtro — no se
+  agregó ningún índice nuevo, decisión basada en la medición, no por simetría
+  con el índice agregado en event-domain (PERF-02 de ese repo). Verificado:
+  272/272 tests, PHPStan 0 errores, CS-Fixer limpio.
 
-### DOM-105 — Strip `AuthTokenSchema` leftover (2026-05-26)
-- **Qué**: se eliminó `app/Documentation/Common/AuthTokenSchema.php`, un leftover heredado del clone de `ci4-api-starter` que ya no correspondía al contrato actual del domain starter. Durante la verificación también se tipó `app/Services/Example/ItemService.php` con el genérico `ItemEntity` y se regeneró `public/swagger.json` para aceptar la salida real del generador OpenAPI.
-- **Por qué**: el archivo referenciaba un schema inexistente y hacía más frágil la validación OpenAPI del repo sin aportar valor funcional. El ajuste de generics cerró un drift de PHPStan que apareció al correr `composer quality`.
-- **Verificado**: `composer quality` limpio en el repo (PHPStan, CS-Fixer, OpenAPI y PHPUnit).
+- [x] **ADM-DASH-02 — Read model acotado para el dashboard Admin** — cerrada
+  2026-08-11. Endpoint autenticado y permission-aware con conteos y actividad
+  reciente bounded para colección, categorías y técnicas; contrato, OpenAPI y
+  prueba de integración de columnas reales verificados.
 
-### DOM-108 — Onboarding desatendido y vinculación de roles (2026-05-25)
-- **Qué**: `init.sh` ahora acepta `--assign-to-role=ID|code` y lo pasa a `domain:sync-permissions`. `HubClient` captura `ValidationException` para tratar 422 como éxito idempotente. `init.sh` corre `php spark core:install` automáticamente.
-- **Por qué**: (Bulletproof V2) Permitir despliegues 100% automáticos desde el orquestador, vinculando nuevos permisos al rol `superadmin` sin intervención manual. Garantizar que el runtime del core esté listo tras el bootstrap.
-- **Verificado**: `php -l` limpio. Scripts probados en flujo de kickstart.
+- [x] **QA-01 — Contract tests y OpenAPI** — cerrada 2026-08-10. Contrato
+  PublicRead Catalog, OpenAPI, auth, envelope, fallback, regresión CRUD y
+  estados verificados. Evidencia en [`../docs/audits/2026-08-10-qa-01-contractos-openapi.md`](../docs/audits/2026-08-10-qa-01-contractos-openapi.md).
+- [x] **QA-02 — EXPLAIN, índices y budgets SQL** — cerrada 2026-08-10. Listing
+  medido con 600 fixtures, máximo 6 queries/500 ms SQL y el índice compuesto
+  `idx_collection_items_public_listing`; sin N+1. Evidencia en
+  [`../docs/audits/2026-08-10-qa-02-explain-indexes.md`](../docs/audits/2026-08-10-qa-02-explain-indexes.md).
+- [x] **QA-03 — Carga fría/caliente/degradada y single-flight** — cerrada
+  2026-08-10 como tarea raíz cross-repo; evidencia en
+  [`../docs/audits/2026-08-10-qa-03-cache-concurrency.md`](../docs/audits/2026-08-10-qa-03-cache-concurrency.md).
+- [x] **QA-04 — Paridad y shadow comparison** — cerrada 2026-08-10 como tarea
+  raíz cross-repo; evidencia en
+  [`../docs/audits/2026-08-10-qa-04-paridad-shadow.md`](../docs/audits/2026-08-10-qa-04-paridad-shadow.md).
+- [x] **CAT-PR-03 — Retirar el HTTP público propio** — cerrada 2026-08-14
+  tras cinco iteraciones estables del BFF/Web (`/ready`, CMS entries, Catalog,
+  Events y cuatro páginas Web, todas `200`). Se retiraron las rutas
+  `public-read/*` y `public/catalog/categories`, sus controladores, adaptadores,
+  DTOs, contratos OpenAPI y tests específicos; se conservaron técnicas y
+  detalle de colección legacy, que no forman parte de este retiro. Se quitaron
+  las dependencias Composer de lectura pública y se regeneró el lock. Las
+  carpetas físicas superseded se eliminaron después en `PKG-CLEANUP-01`, una
+  vez retiradas todas las declaraciones cross-repo.
+  Quality verde: 250 tests, 625 assertions, 1 skipped; PHPStan 0 errores y
+  Swagger actualizado.
 
-### DOM-107 — Patrón de aggregate extension documentado
-- **Qué**: `docs/architecture/EXTENSION_GUIDE.{md,es.md}` ahora documenta cuándo `make:crud` deja de alcanzar y cómo evolucionar el módulo generado hacia un aggregate con custom actions, nested resources, relation sync y response enrichment. `README.md` y `docs/README.md` enlazan explícitamente ese patrón.
-- **Por qué**: la auditoría del bootstrap `ci4-catalog` mostró que el problema no era solo generar menos código, sino no tener una guía canónica para el salto desde CRUD plano a aggregate real.
-- **Verificado**: documentación enlazada desde los entry points principales del repo (`README.md`, `docs/README.md`) y alineada con el playbook de scaffolding existente.
+## 🔴 En progreso
 
-### DOM-106 — Paridad `boolean_like` con el scaffolder
-- **Qué**: `App\Validations\Rules\CustomRules` ahora implementa `boolean_like()` con el mismo contrato esperado por `ci4-api-scaffolding`: acepta bools, `0/1`, y strings `true/false/yes/no/on/off` de forma case-insensitive. Se añadieron los strings de validación en `app/Language/en/Validation.php` y `app/Language/es/Validation.php`.
-- **Por qué**: el scaffolder emite `boolean_like` para fields `bool`, pero `ci4-domain-starter` no exponía esa regla. Eso rompía CRUDs generados con booleanos y obligaba a parchear DTOs/modelos a mano.
-- **Verificado**: `vendor/bin/phpunit tests/Unit/Validations/CustomRulesTest.php --configuration=phpunit.xml --no-coverage --testdox` ✅ (10 tests, 28 assertions).
+- [ ] **REL-01** — Activación controlada; pendiente de ventana de cutover y
+  baseline/shadow del runtime anterior.
 
-### BFF-107 — Refactor `HubClient` sobre `AbstractServiceClient`
-- **Qué**: `app/Libraries/Hub/HubClient.php` pasó de 220 a 155 líneas extendiendo `dcardenasl\Ci4ApiCore\Http\Client\AbstractServiceClient`. Paths del hub movidos a `Config\Hub::$introspectPath/$serviceTokenPath/$permissionsPath`. `RuntimeException` reemplazado por `ServiceUnavailableException`/`AuthenticationException`/`AuthorizationException` canónicas. `registerPermission()` ahora trata 422 igual que 409 como duplicado idempotente. Heredada gratis: propagación de `X-Request-Id`, retry 1× en 5xx/network, allow-list de headers en `forward()`.
-- **Por qué**: eliminar drift entre los dos `HubClient.php` (BFF-102 hizo el mismo refactor en el BFF). Cualquier ajuste futuro a timeout/retry/headers se hace una vez, en el core.
-- **Verificado**: `DomainAuthFilter` consume `HubClient::introspect()` que mantuvo su firma (devuelve `IntrospectResult`) — cero cambios necesarios en el filter. `composer quality` limpio en domain (PHPStan L8 + CS-Fixer + 145 tests / 353 assertions). 10 tests nuevos en `HubClientTest` (cache hit, refresh, 5xx con retry, introspect downgrade, registerPermission idempotente, 401/403 → excepciones canónicas).
-- **Cross-repo**: ver `../TASKS.md` milestone "ci4-bff-starter v1.1".
+## 🟡 Próximo
 
-### DOM-102 — ADR-001: Hub-Domain Split Architecture (2026-05-26)
-- **Qué**: Documentación centralizada en `TASKS.md` y `README.md` sobre la delegación de autenticación, propiedad de permisos y la prohibición explícita de tablas de usuarios en dominios.
-- **Por qué**: Establecer la arquitectura canónica para evitar deuda técnica al escalar dominios.
-- **Verificado**: Arquitectura documentada en "Contratos de arquitectura".
+### BFF de lectura directa (2026-08-13) — ver `../docs/plan/2026-08-13-plan-bff-completo.md`
 
-### DOM-101 — Suite de Smoke tests (2026-05-26)
-- **Qué**: Implementación de tests críticos (`DomainAuthFilterTest`, `HubClientTest`, `CreateItemTest`) garantizando la integridad del flujo principal.
-- **Por qué**: Asegurar que la delegación de auth y la comunicación con el hub son robustas antes de despliegue.
-- **Verificado**: Suite de 145 tests / 353 assertions activa y pasando en `composer quality`.
+No cambia el comportamiento propio de este repo cuando actúa por su cuenta
+(sigue usando `HttpFileMetaResolver`, sin cambios de contrato con el Hub); la
+lectura migrada ahora vive exclusivamente en el BFF.
 
----
+> ⚠️ **`CAT-PR-01..02` (abajo) se completaron bajo un diseño que el plan ya no
+> usa** — proponían extraer/refactorizar la clase hacia un paquete Composer
+> compartido (`teatromuseo-catalog-public-read` en `ci4-platform/`). Revisión
+> de diseño 2026-08-13 (decisión #5 del plan): con un solo consumidor final
+> (el BFF), un paquete no aporta nada — el BFF escribe su propia
+> implementación en `teatromuseo-bff/app/PublicRead/Catalog/`, usando el
+> código de este repo como referencia de lectura, no como dependencia. No se
+> pierde el análisis hecho aquí, pero **no dejes ese paquete/`repositories`
+> como si fuera parte del diseño final**; ver `CAT-PR-03`, que lo limpia.
 
-## ⚪ Backlog
+- [x] **CAT-PR-01 — Crear `teatromuseo-catalog-public-read`.** Mover
+  `PublicReadCollectionItemReader` (ya `BaseConnection`-only) al paquete
+  nuevo en `ci4-platform/`, consumido por este repo vía path-repo (ya declara
+  el bloque `repositories` hacia `ci4-api-core` — extenderlo con el paquete
+  nuevo). `catalog_public_slugs` se mueve tal cual, sin cambios de lógica.
+- [x] **CAT-PR-02 — Refactor a `FileMetaResolverInterface` inyectado.**
+  `PublicReadCollectionItemReader` hoy depende de `HubClient` concreto para
+  resolver media (`resolvePublicFileMeta()`). Cambiar el constructor para
+  recibir `FileMetaResolverInterface` (nueva, en `ci4-public-read-core`) en
+  vez de `HubClient` — inversión de dependencia limpia. Este repo sigue
+  inyectando `HttpFileMetaResolver` (envuelve el `HubClient` actual, cero
+  cambio de comportamiento propio); el BFF inyectará `DirectDbFileMetaResolver`.
+  Depende de que `ci4-public-read-core` (paquete compartido, ver
+  `teatromuseo-bff/TASKS.md` BFF-DB-01/02) ya exista.
+### Plan vigente — PublicRead/PageDelivery/Snapshots (2026-08-09)
 
-*(vacío)*
+`PUB-00`, `PUB-01/02`, `CAT-01..03`, `SHARED-01` y `CACHE-03` están cerradas
+y archivadas. Este repo participa ahora en:
+
+
+Estas casillas reflejan la tarea raíz; no iniciar una rama paralela ni duplicar
+la medición en este repositorio.
+
+### Saneamiento arquitectónico heredado (prioridad 2)
+
+- [ ] **CFG-04** — Extender las rutas analizadas por PHPStan a DTOs,
+  repositorios y comandos, cuando el baseline pueda mantenerse en cero.
+- [ ] **CORE-01b** — Normalizar nombres de campos de localización; requiere
+  migración de datos cross-repo, no un cambio aislado de configuración.
+- [ ] **CORE-06** — Unificar permisos solo con ventana de mantenimiento y
+  migración explícita de `permissions`/`role_permissions` en el Hub.
+- [ ] **MIG-02** — Añadir claves foráneas y decidir una convención única para
+  estados de tablas localizadas y de dominio.
+- [ ] **MIG-03** — Definir y añadir un camino de seed/bootstrap idempotente.
+- [ ] **DOC-01** — Eliminar la deriva de nombres starter/builder en la
+  documentación restante.
+
+### Dependencias y conflictos
+
+- `QA-02` quedó cerrada con los índices justificados por EXPLAIN; cualquier
+  cambio posterior de `MIG-02` que afecte esos planes exige repetir la medición.
+- `CORE-01b` y `CORE-06` afectan contratos compartidos; no ejecutarlos durante
+  `QA-03/QA-04` ni durante el cutover.
+- Los cierres de `CFG-02/03/07/08`, `CORE-01/02/03`, `DEAD-01` y PublicRead se
+  trasladaron al archivo; se reabre un ID solo con evidencia nueva.
 
 ## 🏗️ Contratos de arquitectura
 
-- **DTO-First:** todo Controller in/out usa DTOs. Request DTOs extienden `BaseRequestDTO`. Nunca arrays raw.
-- **Services puros:** no conocen HTTP. Reciben DTOs, devuelven DTOs o lanzan excepciones de dominio.
-- **Controllers delgados:** usar `ApiController::handleRequest()`. Sin lógica de negocio.
-- **Separador de permisos:** punto `.` (NO `:`).
-- **Hub delegation:** nunca validar JWTs localmente. Siempre `HubClient::introspect()`.
-- **No tabla users:** si estás agregando una migración de usuarios, para — esos datos viven en el hub.
-- **Rutas por dominio:** `app/Config/Routes/v1/<dominio>.php`.
-- **Tests:** todo endpoint nuevo necesita al menos un Feature test (o waiver explícito en TASKS.md).
-- **`composer cs-fix` antes de commitear.** No bypasear el pre-commit hook con `--no-verify`.
-
-### 🚧 Technical Debt (Orchestration)
-- [x] **Clean .env Management**: Migrate init.sh from appending to .env to using bootstrap_env.php to prevent duplicate keys. ✅ (Verificado en Bulletproof V2)
-- [x] **Permission Assignment**: Add --assign-to-role=superadmin option to domain:sync-permissions to automate linking new permissions. ✅ 2026-05-25
+- Lecturas públicas separadas del CRUD administrativo, con fieldsets y envelopes
+  versionados.
+- Autenticación delegada al Hub; no decodificar JWT localmente.
+- Permisos con `.` y no con `:`.
+- Medios resueltos en batch; no hacer I/O por entidad durante el render público.
